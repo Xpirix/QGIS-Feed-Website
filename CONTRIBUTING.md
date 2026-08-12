@@ -186,6 +186,65 @@ run from the store. PostgreSQL, nginx and Metabase are already native and need
 no change; because `qgisfeed-uwsgi` speaks the uwsgi protocol, the existing
 `uwsgiPass` nginx block keeps working as is.
 
+#### What the package exposes
+
+Application facts are attached to the derivation, so a host configuration does
+not hardcode them and several hosts cannot drift apart:
+
+| `passthru` attribute | Value |
+|---|---|
+| `manageProgram` | `qgisfeed-manage` |
+| `uwsgiProgram` | `qgisfeed-uwsgi` |
+| `gunicornProgram` | `qgisfeed-gunicorn` |
+| `wsgiModule` | `qgisfeedproject.wsgi` |
+| `settingsModule` | `qgisfeedproject.settings` |
+| `uwsgiIni` | base worker tuning, `nix/uwsgi.ini` |
+| `fetchGeoip` | package that downloads `GeoLite2-City.mmdb` |
+
+`uwsgiIni` carries `workers`, `cheaper` and `harakiri` but deliberately no
+socket, pidfile or chdir: worker counts follow the application's memory profile
+and belong to this repository, while the socket is a host decision. Append a
+second `--ini`, or pass `--socket`, to add it.
+
+`fetchGeoip` takes the destination directory as its argument and needs no
+checkout, so a host can run it from a systemd timer:
+
+```
+${qgisfeed.fetchGeoip}/bin/fetch-geoip /var/lib/qgisfeed/geoip
+```
+
+#### Environment contract
+
+Every variable `qgisfeedproject/settings.py` reads. Anything not listed here is
+not configurable through the environment.
+
+| Variable | Default | Notes |
+|---|---|---|
+| `DEBUG` | `True` | Set `False` in production; error pages otherwise expose settings and environment |
+| `DOMAIN_NAME` | – | Comma separated; drives `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `CORS_ORIGIN_WHITELIST`. `QGIS_FEED_PROD_URL` is the older name and still works |
+| `MEDIA_ROOT` | `<checkout>/qgisfeedproject/media` | Uploaded files |
+| `STATIC_ROOT` | `<checkout>/qgisfeedproject/static_collected` | `collectstatic` destination |
+| `GEOIP_PATH` | `/var/opt/maxmind/` | Directory holding `GeoLite2-City.mmdb` |
+| `DB_NAME` | `qgisfeed` | |
+| `DB_USER` | `qgisfeed` | |
+| `DB_PASSWORD` | empty | Not needed with peer or trust authentication |
+| `DB_HOST` | `/var/run/postgresql` | A path is a unix socket directory |
+| `DB_PORT` | `5432` | |
+| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS`, `EMAIL_HOST_USER`, `EMAIL_BACKEND`, `DEFAULT_FROM_EMAIL` | see `settings.py` | |
+| `EMAIL_HOST_PASSWORD` | empty | Secret |
+| `SENTRY_DSN` | empty | Secret |
+| `SENTRY_RATE` | `1.0` | |
+| `MASTODON_API_BASE_URL`, `BLUESKY_HANDLE`, `TELEGRAM_CHAT_ID` | – | Non-secret halves of the syndication settings |
+| `MASTODON_ACCESS_TOKEN`, `BLUESKY_PASSWORD`, `TELEGRAM_BOT_TOKEN` | empty | Secrets |
+| `DJANGO_LOCAL_SETTINGS` | `settings_local_override.py` | Path to the settings file below; absolute paths are accepted |
+
+The `DB_*` names replace `QGISFEED_DOCKER_DB*`, which are still accepted as a
+fallback. Nothing about the deployment is docker specific any more.
+
+`SECRET_KEY` and `QGISFEED_MAX_RECORDS` are deliberately absent: the first is a
+secret and the second has no environment variable, so both come from the
+settings file.
+
 ### ⚡️ Quick Start
 - Build the docker the container
 ```bash

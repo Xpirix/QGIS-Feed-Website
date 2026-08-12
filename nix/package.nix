@@ -18,6 +18,7 @@
   pkgs,
   pythonEnv,
   staticAssets,
+  fetchGeoip,
 }:
 
 let
@@ -130,9 +131,32 @@ pkgs.stdenv.mkDerivation {
     runHook postInstallCheck
   '';
 
+  # Facts about the application that a deployment would otherwise have to
+  # hardcode. Reading them off the derivation keeps them owned by the people
+  # who know the application, and stops several host configurations drifting
+  # apart as it changes.
+  passthru = {
+    manageProgram = "qgisfeed-manage";
+    uwsgiProgram = "qgisfeed-uwsgi";
+    gunicornProgram = "qgisfeed-gunicorn";
+
+    wsgiModule = "qgisfeedproject.wsgi";
+    settingsModule = "qgisfeedproject.settings";
+
+    # Base worker tuning. Contains no socket: that is a host decision, so the
+    # deployment appends its own --socket or a second --ini.
+    uwsgiIni = ./uwsgi.ini;
+
+    # GeoLite2-City.mmdb is MaxMind licensed and cannot be shipped in the
+    # closure, so it is fetched at runtime into a directory the deployment
+    # chooses and points GEOIP_PATH at:
+    #   ${fetchGeoip}/bin/fetch-geoip /var/lib/qgisfeed/geoip
+    inherit fetchGeoip;
+  };
+
   meta = {
     description = "QGIS Home Page News Feed - Django application";
     homepage = "https://github.com/qgis/QGIS-Feed-Website";
-    mainProgram = "qgisfeed-gunicorn";
+    mainProgram = "qgisfeed-uwsgi";
   };
 }

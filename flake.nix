@@ -27,6 +27,30 @@
       # package is invisible to it and CREATE EXTENSION fails with
       # 'extension "postgis" is not available'.
       postgresqlFor = pkgs: pkgs.postgresql_16.withPackages (ps: [ ps.postgis ]);
+
+      # Every helper is a committed dotfile under scripts/nix, wrapped so it
+      # runs with a known set of tools on PATH. No shell logic lives in Nix.
+      mkScript =
+        pkgs: name: runtimeInputs:
+        pkgs.writeShellApplication {
+          inherit name runtimeInputs;
+          text = builtins.readFile (./scripts/nix + "/${name}.sh");
+          # common.sh is sourced at runtime from the checkout, so shellcheck
+          # cannot see the variables it defines.
+          excludeShellChecks = [ "SC1091" ];
+        };
+
+      # Fetches GeoLite2-City.mmdb into a directory given as its argument.
+      # Exported as a package, not just a development app, because deployments
+      # need it too: the database is MaxMind licensed and cannot ship in the
+      # closure. It takes no dependency on a checkout.
+      fetchGeoipFor =
+        pkgs:
+        mkScript pkgs "fetch-geoip" [
+          pkgs.curl
+          pkgs.coreutils
+          pkgs.git
+        ];
     in
     {
       devShells = forAllSystems (
@@ -72,17 +96,7 @@
         let
           inherit (import ./nix/python.nix { inherit pkgs; }) pythonEnv;
 
-          # Every helper is a committed dotfile under scripts/nix, wrapped so it
-          # runs with a known set of tools on PATH. No shell logic lives in Nix.
-          mkScript =
-            name: runtimeInputs:
-            pkgs.writeShellApplication {
-              inherit name runtimeInputs;
-              text = builtins.readFile (./scripts/nix + "/${name}.sh");
-              # common.sh is sourced at runtime from the checkout, so shellcheck
-              # cannot see the variables it defines.
-              excludeShellChecks = [ "SC1091" ];
-            };
+          script = mkScript pkgs;
 
           baseTools = [
             pythonEnv
@@ -96,15 +110,15 @@
           };
         in
         {
-          db-start = mkApp (mkScript "db-start" baseTools);
-          db-stop = mkApp (mkScript "db-stop" baseTools);
-          db-reset = mkApp (mkScript "db-reset" baseTools);
+          db-start = mkApp (script "db-start" baseTools);
+          db-stop = mkApp (script "db-stop" baseTools);
+          db-reset = mkApp (script "db-reset" baseTools);
           # coreutils supplies du/cut for the dump size shown in the prompt.
-          db-restore = mkApp (mkScript "db-restore" (baseTools ++ [ pkgs.coreutils ]));
-          manage = mkApp (mkScript "manage" baseTools);
-          dev = mkApp (mkScript "dev" (baseTools ++ [ pkgs.nodejs_22 ]));
-          test = mkApp (mkScript "test" baseTools);
-          fetch-geoip = mkApp (mkScript "fetch-geoip" (baseTools ++ [ pkgs.curl ]));
+          db-restore = mkApp (script "db-restore" (baseTools ++ [ pkgs.coreutils ]));
+          manage = mkApp (script "manage" baseTools);
+          dev = mkApp (script "dev" (baseTools ++ [ pkgs.nodejs_22 ]));
+          test = mkApp (script "test" baseTools);
+          fetch-geoip = mkApp (fetchGeoipFor pkgs);
         }
       );
 
@@ -113,10 +127,18 @@
         let
           inherit (import ./nix/python.nix { inherit pkgs; }) pythonEnv;
           staticAssets = import ./nix/static-assets.nix { inherit pkgs; };
-          qgisfeed = import ./nix/package.nix { inherit pkgs pythonEnv staticAssets; };
+          fetchGeoip = fetchGeoipFor pkgs;
+          qgisfeed = import ./nix/package.nix {
+            inherit
+              pkgs
+              pythonEnv
+              staticAssets
+              fetchGeoip
+              ;
+          };
         in
         {
-          inherit staticAssets qgisfeed;
+          inherit staticAssets qgisfeed fetchGeoip;
           default = qgisfeed;
         }
       );
