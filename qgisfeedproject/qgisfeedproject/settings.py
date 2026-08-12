@@ -200,6 +200,18 @@ MEDIA_URL = "/media/"
 # layout, so any other deployment sets GEOIP_PATH.
 GEOIP_PATH = os.environ.get("GEOIP_PATH", "/var/opt/maxmind/")
 
+# GeoDjango loads libgdal and libgeos with ctypes at import time, and reads
+# their locations as Django settings rather than environment variables (see
+# django/contrib/gis/gdal/libgdal.py). Under Nix the libraries live in the
+# store, where ctypes.util.find_library cannot find them, so the package
+# wrappers and the devShell export the paths and they are promoted here.
+#
+# Left as None when unset, which is what Django expects: it then falls back to
+# searching the usual library names, which is correct for the docker images and
+# for a system-wide install.
+GDAL_LIBRARY_PATH = os.environ.get("GDAL_LIBRARY_PATH")
+GEOS_LIBRARY_PATH = os.environ.get("GEOS_LIBRARY_PATH")
+
 # This can be specified in settings_local
 MAIN_WEBSITE_URL = "https://qgis.org"
 
