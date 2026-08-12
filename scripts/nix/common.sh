@@ -28,7 +28,8 @@ fi
 # appears in env.template.
 _qgisfeed_env_is_docker_only() {
     case "$1" in
-    QGISFEED_DOCKER_DBHOST | QGISFEED_DOCKER_DBUSER | QGISFEED_DOCKER_DBPASSWORD | \
+    DB_HOST | DB_USER | DB_PASSWORD | \
+        QGISFEED_DOCKER_DBHOST | QGISFEED_DOCKER_DBUSER | QGISFEED_DOCKER_DBPASSWORD | \
         QGISFEED_DOCKER_SHARED_VOLUME | QGISFEED_DOCKER_IMAGE | METABASE_DOCKER_IMAGE | \
         DJANGO_LOCAL_SETTINGS | DJANGO_SETTINGS_MODULE | GEOIP_PATH)
         return 0
@@ -111,29 +112,29 @@ export MANAGE="${DJANGO_DIR}/manage.py"
 # restored alongside a database dump is picked up without extra configuration.
 # Unset, it falls back to the media directory in the checkout, which is where
 # the repository ships the test fixture images.
-export QGISFEED_MEDIA_ROOT="${QGISFEED_MEDIA_VOLUME:-${DJANGO_DIR}/media}"
-
-# collectstatic needs a destination: settings.py defines STATIC_URL but no
-# STATIC_ROOT. Keep it in the git-ignored state directory.
-export QGISFEED_STATIC_ROOT="${QGISFEED_STATIC_ROOT:-${QGISFEED_STATE_DIR}/static}"
+# MEDIA_ROOT and STATIC_ROOT are the names settings.py reads, and the same ones
+# the deployment infrastructure passes, so the dev shell uses them too rather
+# than inventing a parallel QGISFEED_* spelling.
+export MEDIA_ROOT="${MEDIA_ROOT:-${QGISFEED_MEDIA_VOLUME:-${DJANGO_DIR}/media}}"
+export STATIC_ROOT="${STATIC_ROOT:-${QGISFEED_STATE_DIR}/static}"
 
 # Django does not create MEDIA_ROOT itself, and an upload into a missing
 # directory fails at request time. Creating it here is cheap and non
 # destructive; note that a typo in QGISFEED_MEDIA_VOLUME will therefore
 # silently create an empty directory rather than raise.
-mkdir -p "${QGISFEED_MEDIA_ROOT}" "${QGISFEED_STATIC_ROOT}"
+mkdir -p "${MEDIA_ROOT}" "${STATIC_ROOT}"
 
 # Database connection. settings.py reads these same names, and libpq treats a
 # path as a unix socket directory, so Django connects over the socket.
-export QGISFEED_DOCKER_DBNAME="${QGISFEED_DOCKER_DBNAME:-qgisfeed}"
-export QGISFEED_DOCKER_DBUSER="${QGISFEED_DOCKER_DBUSER:-$(id -un)}"
-export QGISFEED_DOCKER_DBPASSWORD="${QGISFEED_DOCKER_DBPASSWORD:-}"
-export QGISFEED_DOCKER_DBHOST="${PGSOCKET}"
+export DB_NAME="${DB_NAME:-qgisfeed}"
+export DB_USER="${DB_USER:-$(id -un)}"
+export DB_PASSWORD="${DB_PASSWORD:-}"
+export DB_HOST="${PGSOCKET}"
 
 # psql/pg_ctl use these directly.
 export PGHOST="${PGSOCKET}"
-export PGDATABASE="${QGISFEED_DOCKER_DBNAME}"
-export PGUSER="${QGISFEED_DOCKER_DBUSER}"
+export PGDATABASE="${DB_NAME}"
+export PGUSER="${DB_USER}"
 
 # Nix-specific Django settings: inherits settings.py (whose DATABASES block is
 # already environment driven) and only relaxes ALLOWED_HOSTS for local work.
