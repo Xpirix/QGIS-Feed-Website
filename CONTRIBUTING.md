@@ -151,13 +151,40 @@ therefore not committed or vendored. `./scripts/nix/fetch-geoip.sh` downloads it
 
 #### Deployment
 
-`nix build` produces the application closure, and `nixosModules.qgisfeed`
-provides a systemd service for NixOS hosts. PostgreSQL and Metabase are
-supplied by the surrounding infrastructure, so the module configures the Django
-instance only. Secrets - including `QGISFEED_SECRET_KEY`, which **must not** be
-the development value in `settings.py` - are passed through
-`services.qgisfeed.environmentFile`, never through Nix options, because
-everything in the Nix store is world readable.
+This flake exports **no NixOS module**. The QGIS infrastructure already has a
+generic `qgis.djangoApp` module that owns PostgreSQL, nginx, Metabase, ACME and
+the state directories; a second module here would be a competing implementation.
+The flake's job is to produce the application closure.
+
+`nix build` gives:
+
+| Binary | Purpose |
+|---|---|
+| `qgisfeed-manage` | `manage.py` wrapper - `migrate`, `collectstatic`, … |
+| `qgisfeed-uwsgi` | uWSGI with the python3 plugin, speaking the uwsgi protocol to nginx |
+| `qgisfeed-gunicorn` | HTTP server, for local production-like runs |
+
+All three bake in `GDAL_LIBRARY_PATH`, `GEOS_LIBRARY_PATH`, `PROJ_LIB` and
+`PYTHONPATH`, so GeoDjango finds its libraries in the Nix store. Never set
+those from the outside.
+
+Configuration is split the way the infrastructure already splits it:
+
+- **Environment** for values the deployment knows: `DEBUG`,
+  `DJANGO_SETTINGS_MODULE`, `MEDIA_ROOT`, `STATIC_ROOT`,
+  `QGISFEED_DOCKER_DB*`, `SENTRY_DSN`, `SENTRY_RATE`. `settings.py` reads all
+  of these directly, so `qgisfeedproject.settings` is a usable production
+  settings module.
+- **`settings_local_override.py`** for everything else, including secrets,
+  selected by `DJANGO_LOCAL_SETTINGS` and applied last so it wins. See the note
+  above: `.env` is not supported by the production infrastructure.
+
+Moving a host off the container means replacing three units - the image load,
+the `-manage` one-shot and the `oci-containers` service - with
+`qgisfeed-manage migrate`, `qgisfeed-manage collectstatic` and `qgisfeed-uwsgi`
+run from the store. PostgreSQL, nginx and Metabase are already native and need
+no change; because `qgisfeed-uwsgi` speaks the uwsgi protocol, the existing
+`uwsgiPass` nginx block keeps working as is.
 
 ### ⚡️ Quick Start
 - Build the docker the container
