@@ -135,6 +135,7 @@ qgisfeedproject/templates/layouts/sustaining_members.html
 # Nix development environment state: local postgres cluster, collected static
 # files, downloaded GeoIP database. All reproducible, none of it committed.
 .nix/
+result
 
 # Claude Code local settings
 .claude/
