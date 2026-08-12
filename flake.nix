@@ -121,12 +121,13 @@
         }
       );
 
-      nixosModules = {
-        qgisfeed = import ./nix/nixos-module.nix { inherit self; };
-        default = self.nixosModules.qgisfeed;
-      };
+      # No nixosModule is exported on purpose. The QGIS infrastructure already
+      # has a generic qgis.djangoApp module that owns PostgreSQL, nginx,
+      # Metabase and the state directories; a second module here would be a
+      # competing implementation. This flake supplies the application closure,
+      # and the infrastructure decides how to run it.
 
-      checks = forAllSystems (pkgs: import ./nix/checks.nix { inherit self pkgs nixpkgs; });
+      checks = forAllSystems (pkgs: import ./nix/checks.nix { inherit pkgs; });
 
       formatter = forAllSystems (pkgs: pkgs.nixfmt);
     };
