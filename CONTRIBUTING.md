@@ -57,13 +57,107 @@ Now, the configured checks (such as linting and formatting) will run automatical
 
 ### ❄️ Nix
 
-For Nix/NixOS users, you can run the following command on this project root folder:
+The flake provides a complete development environment: Python, Node, and a
+project-local PostgreSQL/PostGIS cluster. **Docker is not required** if you
+develop this way.
 
 ```sh
-nix-shell
-./vscode.sh
+nix develop                     # enter the environment (direnv users: just `cd` in)
+./scripts/nix/db-start.sh       # start the local PostgreSQL/PostGIS
+./scripts/nix/db-reset.sh       # create the schema and load the fixtures
+./scripts/nix/fetch-geoip.sh    # download the GeoLite2 City database (once)
+./scripts/nix/dev.sh            # webpack watch + Django dev server on :8000
 ```
-TODO: Install all dependecies when running nix-shell.
+
+Then open <http://localhost:8000>. The fixtures create the same users as the
+docker path.
+
+#### Commands
+
+Run the helpers directly when you are inside `nix develop`; every tool they need
+is already on `PATH`. The `nix run` column is for invoking them from an ordinary
+shell without entering the environment first.
+
+| Inside `nix develop` | From outside | Description |
+|---|---|---|
+| `./scripts/nix/db-start.sh` | `nix run .#db-start` | Start the local PostgreSQL/PostGIS cluster |
+| `./scripts/nix/db-stop.sh` | `nix run .#db-stop` | Stop it |
+| `./scripts/nix/db-reset.sh` | `nix run .#db-reset` | Drop and recreate the DB, migrate, load fixtures (prompts first) |
+| `./scripts/nix/db-restore.sh` | `nix run .#db-restore` | Restore the DB from a `pg_dump` archive (prompts first) |
+| `./scripts/nix/manage.sh <cmd>` | `nix run .#manage -- <cmd>` | Run any Django management command |
+| `./scripts/nix/dev.sh` | `nix run .#dev` | Run webpack in watch mode plus the Django dev server |
+| `./scripts/nix/test.sh` | `nix run .#test` | Run the Django test suite |
+| `./scripts/nix/fetch-geoip.sh` | `nix run .#fetch-geoip` | Download `GeoLite2-City.mmdb` |
+| — | `nix flake check` | Evaluate every output and run the checks |
+| — | `nix fmt` | Format the Nix files |
+
+Both columns work from anywhere; the script form simply skips a flake
+re-evaluation on every call.
+
+#### How it is put together
+
+- **State** lives in `.nix/` (git-ignored): the PostgreSQL cluster in
+  `.nix/pgdata`, its socket in `.nix/run`, the GeoIP database in `.nix/geoip`.
+  Delete the directory to start over.
+- **The database** is an unprivileged cluster owned by you, listening on a unix
+  socket inside the repository only. Nothing is bound to a network interface,
+  so it cannot clash with a system PostgreSQL.
+- **Settings** come from `qgisfeedproject/settings_nix.py`. It inherits
+  `settings.py`, whose `DATABASES` block is already environment driven;
+  `scripts/nix/common.sh` points `QGISFEED_DOCKER_DBHOST` at the local socket.
+  (`settings_dev.py` is not reused because it hardcodes `HOST = "postgis"`,
+  which only exists inside the docker compose network.)
+- **Python dependencies** come from nixpkgs, except three that nixpkgs cannot
+  supply at the version this project needs; those are built from real
+  derivations in `nix/python-packages.nix`. There is no pip step and no
+  virtualenv.
+- **nixpkgs** is pinned centrally for all QGIS repositories via
+  [qgis-nixpkgs-version](https://github.com/QGIS/qgis-nixpkgs-version). Bump it
+  there, not here.
+- **Shell helpers** are ordinary scripts in `scripts/nix/`, wrapped by the
+  flake. Nothing but wiring lives in the `.nix` files.
+
+#### Configuration (`.env`)
+
+`scripts/nix/common.sh` reads the same git-ignored `.env` that docker compose
+uses, so site configuration is defined once. `env.template` is the committed
+reference. To add a variable, put it in `env.template` and in your `.env`; the
+Nix helpers pick it up with no further wiring.
+
+Precedence is **explicit shell environment > `.env` > built-in defaults**, so a
+one-off override works:
+
+```sh
+QGISFEED_BACKUP_VOLUME=/mnt/other ./scripts/nix/db-restore.sh
+```
+
+The file is parsed rather than sourced, so nothing in it is executed.
+
+Docker-only keys are ignored by the Nix path — importing them would point it at
+the docker database role and at the docker settings override, which hardcodes
+`MEDIA_ROOT=/shared-volume/media` and fails outside a container. The ignore list
+is `_qgisfeed_env_is_docker_only` in `scripts/nix/common.sh`.
+
+Note that `.env` also carries SMTP and social-media credentials. Loading it
+exports those into your development shell, exactly as it does for docker
+compose. Production does not use this path at all: the NixOS module passes
+secrets via `EnvironmentFile` so they never enter the Nix store.
+
+#### GeoIP data
+
+The geofence feature needs `GeoLite2-City.mmdb`, which is MaxMind licensed and
+therefore not committed or vendored. `./scripts/nix/fetch-geoip.sh` downloads it into
+`.nix/geoip/`. Without it, location lookups silently return no result.
+
+#### Deployment
+
+`nix build` produces the application closure, and `nixosModules.qgisfeed`
+provides a systemd service for NixOS hosts. PostgreSQL and Metabase are
+supplied by the surrounding infrastructure, so the module configures the Django
+instance only. Secrets - including `QGISFEED_SECRET_KEY`, which **must not** be
+the development value in `settings.py` - are passed through
+`services.qgisfeed.environmentFile`, never through Nix options, because
+everything in the Nix store is world readable.
 
 ### ⚡️ Quick Start
 - Build the docker the container
