@@ -4,7 +4,12 @@
 #   $out/share/qgisfeed/qgisfeedproject  - the Django project
 #   $out/share/qgisfeed/webpack-stats.json
 #   $out/bin/qgisfeed-manage             - manage.py wrapper
-#   $out/bin/qgisfeed-gunicorn           - gunicorn wrapper
+#   $out/bin/qgisfeed-uwsgi              - uWSGI wrapper, the deployment entry
+#   $out/bin/qgisfeed-gunicorn           - gunicorn wrapper, for local runs
+#
+# The deployment speaks the uwsgi protocol to nginx, so qgisfeed-uwsgi is what
+# the infrastructure runs. gunicorn is kept because it is what
+# REQUIREMENTS_PRODUCTION.txt pins for the docker image.
 #
 # The layout mirrors the docker image on purpose: settings.py computes
 # BASE_DIR as the qgisfeedproject directory and looks for webpack-stats.json
@@ -24,6 +29,16 @@ let
   soExt = pkgs.stdenv.hostPlatform.extensions.sharedLibrary;
   gdalLib = "${pkgs.gdal}/lib/libgdal${soExt}";
   geosLib = "${pkgs.geos}/lib/libgeos_c${soExt}";
+
+  python = pkgs.python312;
+
+  # uWSGI is built with only the python3 plugin. It embeds its own interpreter,
+  # so the application's dependencies are put on PYTHONPATH by the wrapper
+  # below rather than by building uWSGI against pythonEnv directly.
+  uwsgi = pkgs.uwsgi.override {
+    plugins = [ "python3" ];
+    python3 = python;
+  };
 
   # Only the sources the application actually needs. Excluding the docker,
   # node_modules and .nix trees keeps the closure small and stops unrelated
@@ -68,14 +83,25 @@ pkgs.stdenv.mkDerivation {
     makeWrapper ${pythonEnv}/bin/python $out/bin/qgisfeed-manage \
       --add-flags "$appdir/qgisfeedproject/manage.py" \
       --prefix PYTHONPATH : "$appdir/qgisfeedproject" \
-      --set-default DJANGO_SETTINGS_MODULE qgisfeedproject.settings_nix_production \
+      --set-default DJANGO_SETTINGS_MODULE qgisfeedproject.settings \
       --set GDAL_LIBRARY_PATH ${gdalLib} \
       --set GEOS_LIBRARY_PATH ${geosLib} \
       --set PROJ_LIB ${pkgs.proj}/share/proj
 
+    # uWSGI embeds its own interpreter, so both the project directory and the
+    # dependency environment have to be on PYTHONPATH explicitly.
+    makeWrapper ${uwsgi}/bin/uwsgi $out/bin/qgisfeed-uwsgi \
+      --prefix PYTHONPATH : "$appdir/qgisfeedproject" \
+      --prefix PYTHONPATH : "${pythonEnv}/${python.sitePackages}" \
+      --set-default DJANGO_SETTINGS_MODULE qgisfeedproject.settings \
+      --set GDAL_LIBRARY_PATH ${gdalLib} \
+      --set GEOS_LIBRARY_PATH ${geosLib} \
+      --set PROJ_LIB ${pkgs.proj}/share/proj \
+      --chdir "$appdir"
+
     makeWrapper ${pythonEnv}/bin/gunicorn $out/bin/qgisfeed-gunicorn \
       --prefix PYTHONPATH : "$appdir/qgisfeedproject" \
-      --set-default DJANGO_SETTINGS_MODULE qgisfeedproject.settings_nix_production \
+      --set-default DJANGO_SETTINGS_MODULE qgisfeedproject.settings \
       --set GDAL_LIBRARY_PATH ${gdalLib} \
       --set GEOS_LIBRARY_PATH ${geosLib} \
       --set PROJ_LIB ${pkgs.proj}/share/proj \
@@ -85,18 +111,21 @@ pkgs.stdenv.mkDerivation {
   '';
 
   # Catches import errors and missing dependencies at build time rather than on
-  # the deployment host. Uses a throwaway SECRET_KEY because
-  # settings_nix_production refuses to start without one.
+  # the deployment host. This is what caught GeoDjango failing to find libgdal.
   doInstallCheck = true;
   installCheckPhase = ''
     runHook preInstallCheck
 
-    export QGISFEED_SECRET_KEY=build-time-check-not-a-real-secret
-    export QGISFEED_ALLOWED_HOSTS=localhost
-    export STATE_DIRECTORY=$TMPDIR/state
-    mkdir -p "$STATE_DIRECTORY"
+    export MEDIA_ROOT=$TMPDIR/media
+    export STATIC_ROOT=$TMPDIR/static
+    mkdir -p "$MEDIA_ROOT" "$STATIC_ROOT"
 
     $out/bin/qgisfeed-manage check
+
+    # The uWSGI wrapper has its own PYTHONPATH, so prove that interpreter can
+    # import the application too - a broken path here would otherwise only
+    # surface when the service starts.
+    $out/bin/qgisfeed-uwsgi --version >/dev/null
 
     runHook postInstallCheck
   '';
