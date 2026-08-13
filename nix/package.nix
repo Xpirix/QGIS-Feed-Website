@@ -98,7 +98,7 @@ pkgs.stdenv.mkDerivation {
       --set GDAL_LIBRARY_PATH ${gdalLib} \
       --set GEOS_LIBRARY_PATH ${geosLib} \
       --set PROJ_LIB ${pkgs.proj}/share/proj \
-      --chdir "$appdir"
+      --chdir "$appdir/qgisfeedproject"
 
     makeWrapper ${pythonEnv}/bin/gunicorn $out/bin/qgisfeed-gunicorn \
       --prefix PYTHONPATH : "$appdir/qgisfeedproject" \
