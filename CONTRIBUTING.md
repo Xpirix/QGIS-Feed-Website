@@ -162,9 +162,13 @@ The flake's job is to produce the application closure.
 |---|---|
 | `qgisfeed-manage` | `manage.py` wrapper - `migrate`, `collectstatic`, … |
 | `qgisfeed-uwsgi` | uWSGI with the python3 plugin, speaking the uwsgi protocol to nginx |
-| `qgisfeed-gunicorn` | HTTP server, for local production-like runs |
 
-All three bake in `GDAL_LIBRARY_PATH`, `GEOS_LIBRARY_PATH`, `PROJ_LIB` and
+There is deliberately no gunicorn entry point: nginx uses `uwsgiPass`, and the
+docker image runs gunicorn from its own entrypoint rather than from this
+closure. For a local production-like run over plain HTTP, give uWSGI a socket:
+`qgisfeed-uwsgi --ini "$(nix build .#qgisfeed.uwsgiIni --no-link --print-out-paths)" --http-socket 127.0.0.1:8000`.
+
+Both bake in `GDAL_LIBRARY_PATH`, `GEOS_LIBRARY_PATH`, `PROJ_LIB` and
 `PYTHONPATH`, so GeoDjango finds its libraries in the Nix store. Never set
 those from the outside.
 
@@ -195,7 +199,6 @@ not hardcode them and several hosts cannot drift apart:
 |---|---|
 | `manageProgram` | `qgisfeed-manage` |
 | `uwsgiProgram` | `qgisfeed-uwsgi` |
-| `gunicornProgram` | `qgisfeed-gunicorn` |
 | `wsgiModule` | `qgisfeedproject.wsgi` |
 | `settingsModule` | `qgisfeedproject.settings` |
 | `uwsgiIni` | base worker tuning, `nix/uwsgi.ini` |

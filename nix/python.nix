@@ -58,9 +58,6 @@ let
       # Misc
       ps.sentry-sdk
       ps.sqlparse
-
-      # Production server
-      ps.gunicorn
     ]
     ++ [
       # Built here because nixpkgs cannot supply them at the required version.

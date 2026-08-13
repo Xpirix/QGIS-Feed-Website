@@ -5,11 +5,14 @@
 #   $out/share/qgisfeed/webpack-stats.json
 #   $out/bin/qgisfeed-manage             - manage.py wrapper
 #   $out/bin/qgisfeed-uwsgi              - uWSGI wrapper, the deployment entry
-#   $out/bin/qgisfeed-gunicorn           - gunicorn wrapper, for local runs
 #
-# The deployment speaks the uwsgi protocol to nginx, so qgisfeed-uwsgi is what
-# the infrastructure runs. gunicorn is kept because it is what
-# REQUIREMENTS_PRODUCTION.txt pins for the docker image.
+# nginx fronts the application with uwsgiPass, so the server has to speak the
+# binary uwsgi protocol and qgisfeed-uwsgi is what the infrastructure runs. It
+# serves plain HTTP too, with --http-socket, which covers local runs.
+#
+# No gunicorn entry point is built. The docker image runs gunicorn from
+# REQUIREMENTS_PRODUCTION.txt and its own entrypoint, never from this closure,
+# so a wrapper here would be a second, untested way to start the application.
 #
 # The layout mirrors the docker image on purpose: settings.py computes
 # BASE_DIR as the qgisfeedproject directory and looks for webpack-stats.json
@@ -100,14 +103,6 @@ pkgs.stdenv.mkDerivation {
       --set PROJ_LIB ${pkgs.proj}/share/proj \
       --chdir "$appdir/qgisfeedproject"
 
-    makeWrapper ${pythonEnv}/bin/gunicorn $out/bin/qgisfeed-gunicorn \
-      --prefix PYTHONPATH : "$appdir/qgisfeedproject" \
-      --set-default DJANGO_SETTINGS_MODULE qgisfeedproject.settings \
-      --set GDAL_LIBRARY_PATH ${gdalLib} \
-      --set GEOS_LIBRARY_PATH ${geosLib} \
-      --set PROJ_LIB ${pkgs.proj}/share/proj \
-      --chdir "$appdir"
-
     runHook postInstall
   '';
 
@@ -138,7 +133,6 @@ pkgs.stdenv.mkDerivation {
   passthru = {
     manageProgram = "qgisfeed-manage";
     uwsgiProgram = "qgisfeed-uwsgi";
-    gunicornProgram = "qgisfeed-gunicorn";
 
     wsgiModule = "qgisfeedproject.wsgi";
     settingsModule = "qgisfeedproject.settings";
