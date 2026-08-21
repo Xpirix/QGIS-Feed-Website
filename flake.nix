@@ -51,12 +51,34 @@
           pkgs.coreutils
           pkgs.git
         ];
+
+      # Built once per system and shared by packages, checks, apps and the
+      # devShell, so the checks exercise the very derivation that is deployed
+      # rather than a second one assembled the same way.
+      appFor =
+        pkgs:
+        let
+          inherit (import ./nix/python.nix { inherit pkgs; }) pythonEnv;
+          staticAssets = import ./nix/static-assets.nix { inherit pkgs; };
+          fetchGeoip = fetchGeoipFor pkgs;
+        in
+        {
+          inherit pythonEnv staticAssets fetchGeoip;
+          qgisfeed = import ./nix/package.nix {
+            inherit
+              pkgs
+              pythonEnv
+              staticAssets
+              fetchGeoip
+              ;
+          };
+        };
     in
     {
       devShells = forAllSystems (
         pkgs:
         let
-          inherit (import ./nix/python.nix { inherit pkgs; }) pythonEnv;
+          inherit (appFor pkgs) pythonEnv;
         in
         {
           default = pkgs.mkShell {
@@ -94,7 +116,7 @@
       apps = forAllSystems (
         pkgs:
         let
-          inherit (import ./nix/python.nix { inherit pkgs; }) pythonEnv;
+          inherit (appFor pkgs) pythonEnv;
 
           script = mkScript pkgs;
 
@@ -125,21 +147,11 @@
       packages = forAllSystems (
         pkgs:
         let
-          inherit (import ./nix/python.nix { inherit pkgs; }) pythonEnv;
-          staticAssets = import ./nix/static-assets.nix { inherit pkgs; };
-          fetchGeoip = fetchGeoipFor pkgs;
-          qgisfeed = import ./nix/package.nix {
-            inherit
-              pkgs
-              pythonEnv
-              staticAssets
-              fetchGeoip
-              ;
-          };
+          app = appFor pkgs;
         in
         {
-          inherit staticAssets qgisfeed fetchGeoip;
-          default = qgisfeed;
+          inherit (app) staticAssets qgisfeed fetchGeoip;
+          default = app.qgisfeed;
         }
       );
 
@@ -149,8 +161,28 @@
       # competing implementation. This flake supplies the application closure,
       # and the infrastructure decides how to run it.
 
-      checks = forAllSystems (pkgs: import ./nix/checks.nix { inherit pkgs; });
+      checks = forAllSystems (
+        pkgs:
+        let
+          app = appFor pkgs;
+        in
+        import ./nix/checks.nix {
+          inherit pkgs;
+          inherit (app) pythonEnv qgisfeed;
+          postgresql = postgresqlFor pkgs;
+        }
+      );
 
-      formatter = forAllSystems (pkgs: pkgs.nixfmt);
+      # Wrapped rather than `pkgs.nixfmt` directly: nixfmt takes files, and
+      # `nix fmt` hands its formatter the tree root as a bare '.', which nixfmt
+      # answers by waiting on stdin forever.
+      formatter = forAllSystems (
+        pkgs:
+        mkScript pkgs "format" [
+          pkgs.nixfmt
+          pkgs.findutils
+          pkgs.git
+        ]
+      );
     };
 }

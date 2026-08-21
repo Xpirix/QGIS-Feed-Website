@@ -88,8 +88,8 @@ shell without entering the environment first.
 | `./scripts/nix/dev.sh` | `nix run .#dev` | Run webpack in watch mode plus the Django dev server |
 | `./scripts/nix/test.sh` | `nix run .#test` | Run the Django test suite |
 | `./scripts/nix/fetch-geoip.sh` | `nix run .#fetch-geoip` | Download `GeoLite2-City.mmdb` |
+| `./scripts/nix/format.sh` | `nix fmt` | Format every `.nix` file in the tree |
 | — | `nix flake check` | Evaluate every output and run the checks |
-| — | `nix fmt` | Format the Nix files |
 
 Both columns work from anywhere; the script form simply skips a flake
 re-evaluation on every call.
@@ -247,6 +247,78 @@ fallback. Nothing about the deployment is docker specific any more.
 `SECRET_KEY` and `QGISFEED_MAX_RECORDS` are deliberately absent: the first is a
 secret and the second has no environment variable, so both come from the
 settings file.
+
+This table is enforced, not just documented - see `settings-contract` below.
+Change a variable name and that check fails, rather than a deployment breaking
+silently.
+
+#### Formatting
+
+Nix files are formatted with [nixfmt](https://github.com/NixOS/nixfmt). It is
+not configurable, so there is nothing to agree on - run it and commit the
+result:
+
+```bash
+nix fmt                    # the whole tree
+nix fmt nix/package.nix    # one file
+```
+
+`nix fmt` goes through `scripts/nix/format.sh` rather than calling `nixfmt`
+directly. `nixfmt` only accepts files, and `nix fmt` hands its formatter the
+tree root as a bare `.`; given that, `nixfmt` finds no files, falls back to
+reading stdin and hangs with no output. The wrapper expands directories first.
+
+Formatting is enforced in three places, and only the first is optional:
+
+1. The `nixfmt` pre-commit hook. It is a `language: system` hook, so it runs
+   the `nixfmt` from the devShell. **Committing from outside `nix develop` -
+   from an IDE, for instance - silently skips it**, because the command is not
+   on `PATH`.
+2. The `nixfmt` flake check, so a checkout that never installed the hooks
+   cannot drift.
+3. The `nix-checks` GitHub workflow, which runs that check on every pull
+   request.
+
+#### Tests
+
+`nix flake check` runs everything. The logic lives in `tests/nix/`, never in the
+`.nix` files.
+
+| Check | What it proves | Needs a database |
+|---|---|---|
+| `shellcheck` | Every script in `scripts/nix` and `tests/nix` is clean | no |
+| `nixfmt` | The `.nix` files are formatted, even without the pre-commit hooks | no |
+| `passthru-contract` | Every program, ini and module name in `passthru` exists and imports | no |
+| `settings-contract` | The environment table above, including the `QGISFEED_DOCKER_*` fallback and the override precedence rule | no |
+| `migration-drift` | The models match the committed migrations | no |
+| `uwsgi-app-load` | The WSGI callable imports inside uWSGI's own embedded interpreter | no |
+| `integration` | `migrate`, `collectstatic`, the Django suite, and one real HTTP request served by uWSGI | yes |
+
+The first six finish in seconds. `integration` starts its own PostGIS cluster in
+the build sandbox on a unix socket in `$TMPDIR`, so it cannot touch a developer's
+PostgreSQL, and takes minutes. Run one on its own with:
+
+```bash
+nix build .#checks.x86_64-linux.settings-contract -L
+```
+
+Reach for that when a run fails: `nix flake check` stops at the first failing
+check, so a formatting slip can mask whether the application still imports and
+serves. The `nix-checks` workflow runs each check as its own job for the same
+reason.
+
+Two things worth knowing if you edit these:
+
+- `passthru-contract` reads the program names off `passthru` rather than
+  hardcoding them, so renaming one surfaces as a failure instead of a check
+  that quietly tests nothing.
+- `integration` installs PostGIS into `template1`. No migration runs
+  `CreateExtension`, so without that the test database Django creates has no
+  `geometry` type and the run dies before the first test.
+
+For a normal development run against the project-local cluster, use
+`./scripts/nix/test.sh` (or `nix run .#test`) instead - it is much faster than
+rebuilding the closure.
 
 ### ⚡️ Quick Start
 - Build the docker the container
