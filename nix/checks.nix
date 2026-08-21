@@ -36,6 +36,31 @@ let
   check =
     name: attrs: script:
     pkgs.runCommand "check-${name}" attrs (builtins.readFile script);
+
+  # signals.py builds a GeoIP2() on every UserVisit save, outside the try that
+  # guards the lookup, so the suite cannot run without a database on disk.
+  # test_ip_address_removed goes further and asserts a real result - that
+  # 180.247.213.170 resolves to Indonesia - so MaxMind's fabricated test
+  # fixture is not enough and the actual GeoLite2 database is required.
+  #
+  # fetchurl is a fixed-output derivation, which is what lets it reach the
+  # network from inside the build sandbox that ordinary derivations are walled
+  # off from.
+  #
+  # Same source as Dockerfile:29, so the Nix and Docker suites assert against
+  # the same data. Two caveats come with it. It is a third-party mirror rather
+  # than MaxMind, and 'raw/download' is a rolling tag: when upstream refreshes
+  # the file this check fails with a hash mismatch until the hash below is
+  # regenerated with
+  #
+  #   nix store prefetch-file --name GeoLite2-City.mmdb <url>
+  #
+  # That is the pin doing its job - the Dockerfile, which pins nothing, takes
+  # whatever the mirror serves at image build time without noticing.
+  geoipDb = pkgs.fetchurl {
+    url = "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb";
+    hash = "sha256-g5qQASLprttRzBUGUE44JP1mhbvofLoWmbPRlmkJSrg=";
+  };
 in
 {
   # Fails the build if any committed shell script has a syntax error or a
@@ -83,6 +108,7 @@ in
       # The package drops the media directory, so the test fixture image
       # comes from the source tree.
       fixtureImage = ../qgisfeedproject/media/feedimages/rust.png;
+      inherit geoipDb;
     }
   ) ../tests/nix/integration.sh;
 }

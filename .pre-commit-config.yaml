@@ -34,24 +34,3 @@ repos:
     rev: 25.1.0
     hooks:
       - id: black
-
-  # nixfmt and shellcheck run as system hooks rather than from their upstream
-  # pre-commit repositories: the NixOS/nixfmt hook builds from source with
-  # cabal, and shellcheck-precommit runs through docker. Both tools are already
-  # in the devShell (see flake.nix), so use those and keep the hooks working
-  # without a Haskell toolchain or a docker daemon.
-  - repo: local
-    hooks:
-      - id: nixfmt
-        name: nixfmt
-        entry: nixfmt
-        language: system
-        files: \.nix$
-
-      # SC1091 is excluded because the helpers source common.sh through a path
-      # resolved at runtime, which shellcheck cannot follow.
-      - id: shellcheck
-        name: shellcheck
-        entry: shellcheck -e SC1091
-        language: system
-        files: \.sh$

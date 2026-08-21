@@ -268,16 +268,12 @@ directly. `nixfmt` only accepts files, and `nix fmt` hands its formatter the
 tree root as a bare `.`; given that, `nixfmt` finds no files, falls back to
 reading stdin and hangs with no output. The wrapper expands directories first.
 
-Formatting is enforced in three places, and only the first is optional:
-
-1. The `nixfmt` pre-commit hook. It is a `language: system` hook, so it runs
-   the `nixfmt` from the devShell. **Committing from outside `nix develop` -
-   from an IDE, for instance - silently skips it**, because the command is not
-   on `PATH`.
-2. The `nixfmt` flake check, so a checkout that never installed the hooks
-   cannot drift.
-3. The `nix-checks` GitHub workflow, which runs that check on every pull
-   request.
+There is no pre-commit hook for this, on purpose. This is a Django application
+and the flake is a utility for running it, so a commit should not require a Nix
+toolchain from contributors who never touch a `.nix` file. Formatting is
+enforced by the `nixfmt` flake check and by the `nix-checks` workflow on every
+pull request, which is where it concerns the people actually changing those
+files. The same reasoning applies to `shellcheck`.
 
 #### Tests
 
@@ -315,6 +311,15 @@ Two things worth knowing if you edit these:
 - `integration` installs PostGIS into `template1`. No migration runs
   `CreateExtension`, so without that the test database Django creates has no
   `geometry` type and the run dies before the first test.
+- `integration` fetches `GeoLite2-City.mmdb` from the same mirror as
+  `Dockerfile`, pinned by hash. `signals.py` constructs a `GeoIP2()` on every
+  visit and `test_ip_address_removed` asserts a real lookup, so the suite
+  cannot run without it. The file must keep that exact name: given a
+  directory, Django looks for the filenames in `GEOIP_SETTINGS` rather than
+  scanning for any `.mmdb`. The URL is a rolling tag, so when upstream
+  refreshes the database the check fails with a hash mismatch; regenerate it
+  with `nix store prefetch-file --name GeoLite2-City.mmdb <url>` and commit
+  the new hash.
 
 For a normal development run against the project-local cluster, use
 `./scripts/nix/test.sh` (or `nix run .#test`) instead - it is much faster than
