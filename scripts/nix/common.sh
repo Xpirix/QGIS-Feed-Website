@@ -162,6 +162,10 @@ export GEOIP_PATH="${GEOIP_DIR}/"
 # Django needs to import the project package.
 export PYTHONPATH="${DJANGO_DIR}${PYTHONPATH:+:${PYTHONPATH}}"
 
+# OIDC auth
+export QGIS_AUTH_URL="${QGIS_AUTH_URL:-https://auth.qgis.org}"
+export OIDC_RP_CLIENT_ID="${OIDC_RP_CLIENT_ID:-feed-qgis-org}"
+
 # Emit an error and exit non-zero. Used by the helpers below.
 die() {
     echo "error: $*" >&2
