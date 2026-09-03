@@ -33,4 +33,10 @@ if [ -n "${media_root}" ] && [ -d "${media_root}" ]; then
     fi
 fi
 
-exec python "${MANAGE}" test "${@:-qgisfeed}"
+# Both apps by default. "${@:-qgisfeed qgis_sso}" would not do: with no
+# arguments the substitution expands as a single word and manage.py would look
+# for one label called "qgisfeed qgis_sso".
+if [ "$#" -gt 0 ]; then
+    exec python "${MANAGE}" test "$@"
+fi
+exec python "${MANAGE}" test qgisfeed qgis_sso

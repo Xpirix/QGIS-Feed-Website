@@ -79,7 +79,7 @@ echo "== collectstatic =="
 "${manage}" collectstatic --noinput >/dev/null
 
 echo "== test suite =="
-"${manage}" test qgisfeed --noinput
+"${manage}" test qgisfeed qgis_sso --noinput
 
 echo "== serving a request =="
 # The suite exercises Django through the test client, which bypasses the
