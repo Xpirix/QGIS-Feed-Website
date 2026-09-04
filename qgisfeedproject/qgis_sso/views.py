@@ -5,6 +5,7 @@ import logging
 from urllib.parse import urlencode
 
 from django.conf import settings
+from django.contrib.auth import SESSION_KEY
 from django.contrib.auth.views import LoginView
 from django.core.cache import cache
 from django.http import HttpResponseRedirect
@@ -50,8 +51,13 @@ def site_login(request, *args, **kwargs):
     authors group. It is ordinary now: roles are mirrored from Keycloak at
     every sign-in, so an account with no feed role legitimately ends up signed
     in with no permissions. Say that, rather than showing the form again.
+
+    Whether anyone is signed in is read from the session, not ``request.user``:
+    ``QgisFeedUserVisitMiddleware`` substitutes a shared ``qgis_user`` account
+    on anonymous requests, so ``request.user.is_authenticated`` is true even
+    for a visitor who has never logged in.
     """
-    if request.user.is_authenticated and request.GET.get("next"):
+    if request.session.get(SESSION_KEY) and request.GET.get("next"):
         return render(
             request,
             "qgis_sso/sign_in_failed.html",

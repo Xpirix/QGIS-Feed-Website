@@ -653,8 +653,15 @@ class FeedsListViewTestCase(TestCase):
 
         # Check if the user is redirected to the login page
         self.assertRedirects(
-            response, reverse("login") + "?next=" + reverse("feeds_list")
+            response,
+            reverse("login") + "?next=" + reverse("feeds_list"),
+            fetch_redirect_response=False,
         )
+
+        # Somebody already signed in is told they lack access, rather than
+        # being shown a login form beside a logout button.
+        landing = self.client.get(reverse("login"), {"next": reverse("feeds_list")})
+        self.assertEqual(landing.status_code, 403)
 
     def test_feeds_list_filtering(self):
         self.client.login(username="admin", password="admin")
@@ -767,7 +774,9 @@ class FeedsItemFormTestCase(TestCase):
         response = self.client.get(reverse("feed_entry_add"))
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(
-            response, reverse("login") + "?next=" + reverse("feed_entry_add")
+            response,
+            reverse("login") + "?next=" + reverse("feed_entry_add"),
+            fetch_redirect_response=False,
         )
         self.assertIsNone(response.context)
 
@@ -777,8 +786,14 @@ class FeedsItemFormTestCase(TestCase):
         self.assertRedirects(
             response,
             reverse("login") + "?next=" + reverse("feed_entry_update", args=[3]),
+            fetch_redirect_response=False,
         )
         self.assertIsNone(response.context)
+
+        # Somebody already signed in is told they lack access, rather than
+        # being shown a login form beside a logout button.
+        landing = self.client.get(reverse("login"), {"next": reverse("feed_entry_add")})
+        self.assertEqual(landing.status_code, 403)
 
     def test_authenticated_user_add_feed(self):
         # Add a feed entry test
@@ -1996,7 +2011,13 @@ class SavedSpatialFilterTestCase(TestCase):
         csrf = self._csrf()
         response = self.client.post(
             reverse("saved_spatial_filters"),
-            data=json.dumps({"name": "Test", "description": "desc", "geometry": self.POLYGON_GEOJSON}),
+            data=json.dumps(
+                {
+                    "name": "Test",
+                    "description": "desc",
+                    "geometry": self.POLYGON_GEOJSON,
+                }
+            ),
             content_type="application/json",
             HTTP_X_CSRFTOKEN=csrf,
         )
@@ -2020,11 +2041,14 @@ class SavedSpatialFilterTestCase(TestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_delete(self):
-        from .models import SavedSpatialFilter
         from django.contrib.gis.geos import Polygon
 
+        from .models import SavedSpatialFilter
+
         geom = Polygon(((0, 0), (1, 0), (1, 1), (0, 1), (0, 0)))
-        f = SavedSpatialFilter.objects.create(user=self.admin, name="ToDelete", geometry=geom)
+        f = SavedSpatialFilter.objects.create(
+            user=self.admin, name="ToDelete", geometry=geom
+        )
 
         self.client.login(username="admin", password="admin")
         csrf = self._csrf()
@@ -2036,12 +2060,15 @@ class SavedSpatialFilterTestCase(TestCase):
         self.assertFalse(SavedSpatialFilter.objects.filter(pk=f.pk).exists())
 
     def test_delete_other_users_filter_returns_404(self):
-        from .models import SavedSpatialFilter
         from django.contrib.gis.geos import Polygon
+
+        from .models import SavedSpatialFilter
 
         other_user = User.objects.get(username="staff")
         geom = Polygon(((0, 0), (1, 0), (1, 1), (0, 1), (0, 0)))
-        f = SavedSpatialFilter.objects.create(user=other_user, name="OtherFilter", geometry=geom)
+        f = SavedSpatialFilter.objects.create(
+            user=other_user, name="OtherFilter", geometry=geom
+        )
 
         self.client.login(username="admin", password="admin")
         csrf = self._csrf()
