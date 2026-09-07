@@ -128,6 +128,7 @@ class PasswordRetirementTest(SsoTestCase):
         self.assertTrue(user.has_usable_password())
 
 
+@override_settings(**SSO_SETTINGS)
 class NoAutoCreateTest(SsoTestCase):
     """A valid realm user with no local account is refused, never created."""
 

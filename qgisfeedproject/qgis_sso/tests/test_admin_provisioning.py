@@ -20,6 +20,11 @@ from ..provisioning import Provisioner
 
 CHANGELIST = reverse("admin:auth_user_changelist")
 
+# force_login picks the first configured backend, which is the OIDC one, and
+# SessionRefresh would then bounce every admin GET to Keycloak to renew a token
+# these fixtures never had.
+LOCAL_BACKEND = "django.contrib.auth.backends.ModelBackend"
+
 ADMIN_SETTINGS = {
     "OIDC_RP_CLIENT_ID": "feed-qgis-org",
     "SSO_SETUP_REDIRECT_URI": "https://feed.example.org/accounts/login/",
@@ -85,7 +90,7 @@ class ProvisionActionTest(TestCase):
         self.target = User.objects.create_user(
             "alice", "alice@example.org", "x", last_login=timezone.now()
         )
-        self.client.force_login(self.superuser)
+        self.client.force_login(self.superuser, backend=LOCAL_BACKEND)
 
     def _patched(self, data):
         """Post the admin action with the realm stubbed out."""
@@ -172,7 +177,7 @@ class ProvisionActionTest(TestCase):
             Permission.objects.get(codename="change_user"),
             Permission.objects.get(codename="view_user"),
         )
-        self.client.force_login(staff)
+        self.client.force_login(staff, backend=LOCAL_BACKEND)
 
         response = self._patched(
             {
@@ -282,7 +287,7 @@ class SendSetupEmailActionTest(TestCase):
         self.identity = KeycloakIdentity.objects.create(
             user=self.target, sub="sub-alice", issuer="https://auth.example.org"
         )
-        self.client.force_login(self.superuser)
+        self.client.force_login(self.superuser, backend=LOCAL_BACKEND)
 
     def _send(self, user=None):
         real_init = Provisioner.__init__
@@ -291,7 +296,7 @@ class SendSetupEmailActionTest(TestCase):
             real_init(instance, client=self.realm)
 
         if user is not None:
-            self.client.force_login(user)
+            self.client.force_login(user, backend=LOCAL_BACKEND)
         with mock.patch.object(Provisioner, "__init__", init):
             return self.client.post(
                 reverse("admin:qgis_sso_keycloakidentity_changelist"),

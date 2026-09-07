@@ -15,6 +15,11 @@ from ..models import KeycloakIdentity
 
 ACCOUNT_URL = "https://auth.example.org/realms/qgis/account/"
 
+# force_login picks the first configured backend, which is the OIDC one, and
+# SessionRefresh would then bounce every GET to Keycloak to renew a token this
+# fixture never had. These tests are about the header, not the refresh.
+LOCAL_BACKEND = "django.contrib.auth.backends.ModelBackend"
+
 
 @override_settings(SSO_ACCOUNT_URL=ACCOUNT_URL)
 class HeaderAccountMenuTest(TestCase):
@@ -29,20 +34,20 @@ class HeaderAccountMenuTest(TestCase):
         response = self.home()
 
         self.assertContains(response, "Login")
-        self.assertNotContains(response, "Log out")
+        self.assertNotContains(response, "Log Out")
         self.assertNotContains(response, "qgis_user")
 
     def test_signed_in_user_sees_their_name_and_a_logout(self):
-        self.client.force_login(self.user)
+        self.client.force_login(self.user, backend=LOCAL_BACKEND)
 
         response = self.home()
 
         self.assertContains(response, "alice")
-        self.assertContains(response, "Log out")
+        self.assertContains(response, "Log Out")
 
     def test_profile_is_offered_only_to_an_sso_linked_account(self):
         """A local-only account has nothing to manage at auth.qgis.org."""
-        self.client.force_login(self.user)
+        self.client.force_login(self.user, backend=LOCAL_BACKEND)
 
         self.assertNotContains(self.home(), ACCOUNT_URL)
 
@@ -56,7 +61,7 @@ class HeaderAccountMenuTest(TestCase):
 
     def test_logging_out_is_a_post(self):
         """A GET logout can be triggered by any image tag on any other site."""
-        self.client.force_login(self.user)
+        self.client.force_login(self.user, backend=LOCAL_BACKEND)
 
         response = self.home()
 
