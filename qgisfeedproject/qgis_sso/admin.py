@@ -379,6 +379,15 @@ class SsoAwareUserAdmin(BaseUserAdmin):
         provisioned = failed = 0
         for decision in decisions:
             if not decision.actionable:
+                # Name the account and the reason. Being told only that there
+                # was nothing to do leaves no way to see which account was
+                # held back, or for what, without previewing again.
+                self.message_user(
+                    request,
+                    _("%(username)s: %(reason)s")
+                    % {"username": decision.user.username, "reason": decision.reason},
+                    messages.ERROR if decision.is_error else messages.WARNING,
+                )
                 continue
             try:
                 provisioner.provision(decision)

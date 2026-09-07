@@ -348,6 +348,16 @@ OIDC_USE_NONCE = True
 OIDC_STORE_ID_TOKEN = True
 OIDC_OP_LOGOUT_URL_METHOD = "qgis_sso.auth.provider_logout"
 
+# Pages SessionRefresh must leave alone. They are the ones a user reaches
+# *because* their session is in doubt, so bouncing them to Keycloak to renew
+# a token turns each of them into a round trip they did not ask for - and on
+# the login page, into a loop.
+OIDC_EXEMPT_URLS = [
+    "login",
+    "admin_login_override",
+    "qgis_sso:sign_in_failed",
+]
+
 # Where mozilla-django-oidc sends a failed authentication. Almost always a
 # realm user with no account here, so the page says so rather than showing a
 # traceback.

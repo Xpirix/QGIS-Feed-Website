@@ -72,7 +72,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   header offering logout. It now explains that the account lacks the
   permission, and that permissions follow the roles on the QGIS account. Rare
   before, since every staff account was in the authors group; ordinary now
-  that roles are mirrored.
+  that roles are mirrored. Reached without a `next` — which is where Keycloak
+  returns somebody straight after they enrol a passkey — a signed-in visitor is
+  sent on to the site instead of being shown the form again, which had them
+  signing in twice to get in once.
+- **`SessionRefresh` leaves the login, admin-login and sign-in-failed pages
+  alone** (`OIDC_EXEMPT_URLS`). Those are the pages a user reaches *because*
+  their session is in doubt, so renewing a token from them is a round trip
+  nobody asked for, and on the login page a loop.
+- **Provisioning names the accounts it holds back.** Confirming a selection and
+  being told only that there was nothing to do gave no way to see which account
+  was skipped, or why, without previewing again.
 - **`qgisfeed.signals.setup_group`** now only considers the user being saved,
   and leaves SSO-linked accounts alone. It previously swept every staff user on
   *any* user save, which undid role revocations — including via the
