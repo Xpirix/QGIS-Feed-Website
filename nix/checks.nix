@@ -5,7 +5,7 @@
 # sandbox and runs the Django suite, so it takes minutes.
 #
 # No test logic lives in this file: each check reads a committed script from
-# tests/nix and passes it what it needs through the derivation environment.
+# nix/tests and passes it what it needs through the derivation environment.
 {
   pkgs,
   pythonEnv,
@@ -47,19 +47,22 @@ let
   # network from inside the build sandbox that ordinary derivations are walled
   # off from.
   #
-  # Same source as Dockerfile:29, so the Nix and Docker suites assert against
-  # the same data. Two caveats come with it. It is a third-party mirror rather
-  # than MaxMind, and 'raw/download' is a rolling tag: when upstream refreshes
-  # the file this check fails with a hash mismatch until the hash below is
-  # regenerated with
+  # A dated release tag, not the 'download' branch Dockerfile:29 uses. That
+  # branch is force-pushed whenever MaxMind publishes, so it broke this check
+  # with a hash mismatch every week, and it quietly re-dated the geolocation the
+  # geofencing assertions above depend on. Release assets cannot be replaced in
+  # place, so the tag pins both the build and the test data.
+  #
+  # The mirror is still a third party rather than MaxMind; moving to MaxMind's
+  # Apache-2.0 test fixture needs the spatial fixtures rewritten off Indonesia.
+  #
+  # To move to a newer database, pick a tag from
+  # https://github.com/P3TERX/GeoLite.mmdb/releases and regenerate the hash with
   #
   #   nix store prefetch-file --name GeoLite2-City.mmdb <url>
-  #
-  # That is the pin doing its job - the Dockerfile, which pins nothing, takes
-  # whatever the mirror serves at image build time without noticing.
   geoipDb = pkgs.fetchurl {
-    url = "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb";
-    hash = "sha256-g5qQASLprttRzBUGUE44JP1mhbvofLoWmbPRlmkJSrg=";
+    url = "https://github.com/P3TERX/GeoLite.mmdb/releases/download/2026.09.04/GeoLite2-City.mmdb";
+    hash = "sha256-hZdM1xUzPB2rniP6BoVIOoyTFtNy5pFk+DbR+BLEH/g=";
   };
 in
 {
@@ -67,7 +70,7 @@ in
   # shellcheck finding. SC1091 is excluded because common.sh is sourced through
   # a path resolved at runtime, which shellcheck cannot follow.
   shellcheck = pkgs.runCommand "shellcheck-scripts" { nativeBuildInputs = [ pkgs.shellcheck ]; } ''
-    shellcheck -e SC1091 ${../scripts/nix}/*.sh ${../tests/nix}/*.sh
+    shellcheck -e SC1091 ${./scripts}/*.sh ${./tests}/*.sh
     touch $out
   '';
 
@@ -79,21 +82,21 @@ in
   '';
 
   # The deployment interface: everything passthru advertises must exist.
-  passthru-contract = check "passthru-contract" appAttrs ../tests/nix/passthru-contract.sh;
+  passthru-contract = check "passthru-contract" appAttrs ./tests/passthru-contract.sh;
 
   # The environment variables settings.py reads, which the infrastructure
   # depends on and CONTRIBUTING.md documents.
   settings-contract = check "settings-contract" {
     nativeBuildInputs = [ pythonEnv ];
-    testScript = ../tests/nix/settings_contract.py;
+    testScript = ./tests/settings_contract.py;
     inherit appPythonPath;
-  } ../tests/nix/settings-contract.sh;
+  } ./tests/settings-contract.sh;
 
   # Models and migrations agree.
-  migration-drift = check "migration-drift" appAttrs ../tests/nix/migration-drift.sh;
+  migration-drift = check "migration-drift" appAttrs ./tests/migration-drift.sh;
 
   # The WSGI callable imports inside uWSGI's embedded interpreter.
-  uwsgi-app-load = check "uwsgi-app-load" appAttrs ../tests/nix/uwsgi-app-load.sh;
+  uwsgi-app-load = check "uwsgi-app-load" appAttrs ./tests/uwsgi-app-load.sh;
 
   # Slow tier: the Django test suite and one real request, against PostGIS.
   integration = check "integration" (
@@ -108,7 +111,13 @@ in
       # The package drops the media directory, so the test fixture image
       # comes from the source tree.
       fixtureImage = ../qgisfeedproject/media/feedimages/rust.png;
+      # The real override file is git-ignored, so a checkout only ever has the
+      # template. Running the suite against it means a setting that is only
+      # defined there - OIDC_RP_CLIENT_SECRET is the current example - is
+      # exercised rather than silently absent, and the check rebuilds whenever
+      # the template changes.
+      settingsTemplate = ../qgisfeedproject/qgisfeedproject/settings_local_override.py.templ;
       inherit geoipDb;
     }
-  ) ../tests/nix/integration.sh;
+  ) ./tests/integration.sh;
 }

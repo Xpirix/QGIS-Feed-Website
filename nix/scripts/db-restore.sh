@@ -22,7 +22,7 @@ set -euo pipefail
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 export PROJECT_ROOT
 # shellcheck source=./common.sh
-. "${PROJECT_ROOT}/scripts/nix/common.sh"
+. "${PROJECT_ROOT}/nix/scripts/common.sh"
 
 FORCE=0
 DUMP=""
@@ -52,7 +52,7 @@ QGISFEED_BACKUP_VOLUME in .env to the directory holding latest-qgisfeed.dmp."
 fi
 
 if ! pg_ctl status --pgdata="${PGDATA}" >/dev/null 2>&1; then
-    die "PostgreSQL is not running. Start it first: ./scripts/nix/db-start.sh"
+    die "PostgreSQL is not running. Start it first: ./nix/scripts/db-start.sh"
 fi
 
 if [ "${FORCE}" -ne 1 ]; then
@@ -89,7 +89,7 @@ if ! pg_restore --dbname="${PGDATABASE}" --no-owner --no-privileges "${DUMP}"; t
     echo "warning: pg_restore reported errors (see above)." >&2
     echo "Ownership and 'COMMENT ON EXTENSION' failures are usually harmless;" >&2
     echo "anything mentioning a missing table or relation is not." >&2
-    echo "Verify with: ./scripts/nix/manage.sh showmigrations" >&2
+    echo "Verify with: ./nix/scripts/manage.sh showmigrations" >&2
     exit 1
 fi
 

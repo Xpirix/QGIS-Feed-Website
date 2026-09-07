@@ -63,10 +63,10 @@ develop this way.
 
 ```sh
 nix develop                     # enter the environment (direnv users: just `cd` in)
-./scripts/nix/db-start.sh       # start the local PostgreSQL/PostGIS
-./scripts/nix/db-reset.sh       # create the schema and load the fixtures
-./scripts/nix/fetch-geoip.sh    # download the GeoLite2 City database (once)
-./scripts/nix/dev.sh            # webpack watch + Django dev server on :8000
+./nix/scripts/db-start.sh       # start the local PostgreSQL/PostGIS
+./nix/scripts/db-reset.sh       # create the schema and load the fixtures
+./nix/scripts/fetch-geoip.sh    # download the GeoLite2 City database (once)
+./nix/scripts/dev.sh            # webpack watch + Django dev server on :8000
 ```
 
 Then open <http://localhost:8000>. The fixtures create the same users as the
@@ -80,15 +80,15 @@ shell without entering the environment first.
 
 | Inside `nix develop` | From outside | Description |
 |---|---|---|
-| `./scripts/nix/db-start.sh` | `nix run .#db-start` | Start the local PostgreSQL/PostGIS cluster |
-| `./scripts/nix/db-stop.sh` | `nix run .#db-stop` | Stop it |
-| `./scripts/nix/db-reset.sh` | `nix run .#db-reset` | Drop and recreate the DB, migrate, load fixtures (prompts first) |
-| `./scripts/nix/db-restore.sh` | `nix run .#db-restore` | Restore the DB from a `pg_dump` archive (prompts first) |
-| `./scripts/nix/manage.sh <cmd>` | `nix run .#manage -- <cmd>` | Run any Django management command |
-| `./scripts/nix/dev.sh` | `nix run .#dev` | Run webpack in watch mode plus the Django dev server |
-| `./scripts/nix/test.sh` | `nix run .#test` | Run the Django test suite |
-| `./scripts/nix/fetch-geoip.sh` | `nix run .#fetch-geoip` | Download `GeoLite2-City.mmdb` |
-| `./scripts/nix/format.sh` | `nix fmt` | Format every `.nix` file in the tree |
+| `./nix/scripts/db-start.sh` | `nix run .#db-start` | Start the local PostgreSQL/PostGIS cluster |
+| `./nix/scripts/db-stop.sh` | `nix run .#db-stop` | Stop it |
+| `./nix/scripts/db-reset.sh` | `nix run .#db-reset` | Drop and recreate the DB, migrate, load fixtures (prompts first) |
+| `./nix/scripts/db-restore.sh` | `nix run .#db-restore` | Restore the DB from a `pg_dump` archive (prompts first) |
+| `./nix/scripts/manage.sh <cmd>` | `nix run .#manage -- <cmd>` | Run any Django management command |
+| `./nix/scripts/dev.sh` | `nix run .#dev` | Run webpack in watch mode plus the Django dev server |
+| `./nix/scripts/test.sh` | `nix run .#test` | Run the Django test suite |
+| `./nix/scripts/fetch-geoip.sh` | `nix run .#fetch-geoip` | Download `GeoLite2-City.mmdb` |
+| `./nix/scripts/format.sh` | `nix fmt` | Format every `.nix` file in the tree |
 | — | `nix flake check` | Evaluate every output and run the checks |
 
 Both columns work from anywhere; the script form simply skips a flake
@@ -104,7 +104,7 @@ re-evaluation on every call.
   so it cannot clash with a system PostgreSQL.
 - **Settings** come from `qgisfeedproject/settings_nix.py`. It inherits
   `settings.py`, whose `DATABASES` block is already environment driven;
-  `scripts/nix/common.sh` points `QGISFEED_DOCKER_DBHOST` at the local socket.
+  `nix/scripts/common.sh` points `QGISFEED_DOCKER_DBHOST` at the local socket.
   (`settings_dev.py` is not reused because it hardcodes `HOST = "postgis"`,
   which only exists inside the docker compose network.)
 - **Python dependencies** come from nixpkgs, except three that nixpkgs cannot
@@ -114,12 +114,12 @@ re-evaluation on every call.
 - **nixpkgs** is pinned centrally for all QGIS repositories via
   [qgis-nixpkgs-version](https://github.com/QGIS/qgis-nixpkgs-version). Bump it
   there, not here.
-- **Shell helpers** are ordinary scripts in `scripts/nix/`, wrapped by the
+- **Shell helpers** are ordinary scripts in `nix/scripts/`, wrapped by the
   flake. Nothing but wiring lives in the `.nix` files.
 
 #### Configuration (`.env`)
 
-`scripts/nix/common.sh` reads the same git-ignored `.env` that docker compose
+`nix/scripts/common.sh` reads the same git-ignored `.env` that docker compose
 uses, so site configuration is defined once. `env.template` is the committed
 reference. To add a variable, put it in `env.template` and in your `.env`; the
 Nix helpers pick it up with no further wiring.
@@ -128,7 +128,7 @@ Precedence is **explicit shell environment > `.env` > built-in defaults**, so a
 one-off override works:
 
 ```sh
-QGISFEED_BACKUP_VOLUME=/mnt/other ./scripts/nix/db-restore.sh
+QGISFEED_BACKUP_VOLUME=/mnt/other ./nix/scripts/db-restore.sh
 ```
 
 The file is parsed rather than sourced, so nothing in it is executed.
@@ -136,7 +136,7 @@ The file is parsed rather than sourced, so nothing in it is executed.
 Docker-only keys are ignored by the Nix path — importing them would point it at
 the docker database role and at the docker settings override, which hardcodes
 `MEDIA_ROOT=/shared-volume/media` and fails outside a container. The ignore list
-is `_qgisfeed_env_is_docker_only` in `scripts/nix/common.sh`.
+is `_qgisfeed_env_is_docker_only` in `nix/scripts/common.sh`.
 
 Note that `.env` also carries SMTP and social-media credentials. Loading it
 exports those into your development shell, exactly as it does for docker
@@ -146,7 +146,7 @@ secrets via `EnvironmentFile` so they never enter the Nix store.
 #### GeoIP data
 
 The geofence feature needs `GeoLite2-City.mmdb`, which is MaxMind licensed and
-therefore not committed or vendored. `./scripts/nix/fetch-geoip.sh` downloads it into
+therefore not committed or vendored. `./nix/scripts/fetch-geoip.sh` downloads it into
 `.nix/geoip/`. Without it, location lookups silently return no result.
 
 #### Deployment
@@ -263,7 +263,7 @@ nix fmt                    # the whole tree
 nix fmt nix/package.nix    # one file
 ```
 
-`nix fmt` goes through `scripts/nix/format.sh` rather than calling `nixfmt`
+`nix fmt` goes through `nix/scripts/format.sh` rather than calling `nixfmt`
 directly. `nixfmt` only accepts files, and `nix fmt` hands its formatter the
 tree root as a bare `.`; given that, `nixfmt` finds no files, falls back to
 reading stdin and hangs with no output. The wrapper expands directories first.
@@ -277,12 +277,12 @@ files. The same reasoning applies to `shellcheck`.
 
 #### Tests
 
-`nix flake check` runs everything. The logic lives in `tests/nix/`, never in the
+`nix flake check` runs everything. The logic lives in `nix/tests/`, never in the
 `.nix` files.
 
 | Check | What it proves | Needs a database |
 |---|---|---|
-| `shellcheck` | Every script in `scripts/nix` and `tests/nix` is clean | no |
+| `shellcheck` | Every script in `nix/scripts` and `nix/tests` is clean | no |
 | `nixfmt` | The `.nix` files are formatted, even without the pre-commit hooks | no |
 | `passthru-contract` | Every program, ini and module name in `passthru` exists and imports | no |
 | `settings-contract` | The environment table above, including the `QGISFEED_DOCKER_*` fallback and the override precedence rule | no |
@@ -312,17 +312,18 @@ Two things worth knowing if you edit these:
   `CreateExtension`, so without that the test database Django creates has no
   `geometry` type and the run dies before the first test.
 - `integration` fetches `GeoLite2-City.mmdb` from the same mirror as
-  `Dockerfile`, pinned by hash. `signals.py` constructs a `GeoIP2()` on every
-  visit and `test_ip_address_removed` asserts a real lookup, so the suite
-  cannot run without it. The file must keep that exact name: given a
+  `Dockerfile`, pinned by hash to a dated release tag. `signals.py` constructs
+  a `GeoIP2()` on every visit and the geofencing tests assert real lookups, so
+  the suite cannot run without it. The file must keep that exact name: given a
   directory, Django looks for the filenames in `GEOIP_SETTINGS` rather than
-  scanning for any `.mmdb`. The URL is a rolling tag, so when upstream
-  refreshes the database the check fails with a hash mismatch; regenerate it
-  with `nix store prefetch-file --name GeoLite2-City.mmdb <url>` and commit
-  the new hash.
+  scanning for any `.mmdb`. `Dockerfile` tracks the mirror's `download` branch,
+  which is force-pushed whenever MaxMind publishes; the check pins a release
+  asset instead, so the database moves only when someone picks a newer tag from
+  <https://github.com/P3TERX/GeoLite.mmdb/releases> and regenerates the hash
+  with `nix store prefetch-file --name GeoLite2-City.mmdb <url>`.
 
 For a normal development run against the project-local cluster, use
-`./scripts/nix/test.sh` (or `nix run .#test`) instead - it is much faster than
+`./nix/scripts/test.sh` (or `nix run .#test`) instead - it is much faster than
 rebuilding the closure.
 
 ### ⚡️ Quick Start

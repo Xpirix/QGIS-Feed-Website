@@ -15,7 +15,7 @@ set -euo pipefail
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 export PROJECT_ROOT
 # shellcheck source=./common.sh
-. "${PROJECT_ROOT}/scripts/nix/common.sh"
+. "${PROJECT_ROOT}/nix/scripts/common.sh"
 
 FORCE=0
 if [ "${1:-}" = "--force" ]; then
@@ -23,7 +23,7 @@ if [ "${1:-}" = "--force" ]; then
 fi
 
 if ! pg_ctl status --pgdata="${PGDATA}" >/dev/null 2>&1; then
-    die "PostgreSQL is not running. Start it first: ./scripts/nix/db-start.sh"
+    die "PostgreSQL is not running. Start it first: ./nix/scripts/db-start.sh"
 fi
 
 if [ "${FORCE}" -ne 1 ]; then

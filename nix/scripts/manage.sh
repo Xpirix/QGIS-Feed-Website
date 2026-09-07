@@ -3,10 +3,10 @@
 #
 # Every argument is passed straight through to manage.py, so this is the Nix
 # equivalent of `docker compose exec qgisfeed python qgisfeedproject/manage.py`:
-#   ./scripts/nix/manage.sh createsuperuser
-#   ./scripts/nix/manage.sh migrate
-#   ./scripts/nix/manage.sh shell
-#   ./scripts/nix/manage.sh collectstatic --no-input
+#   ./nix/scripts/manage.sh createsuperuser
+#   ./nix/scripts/manage.sh migrate
+#   ./nix/scripts/manage.sh shell
+#   ./nix/scripts/manage.sh collectstatic --no-input
 # or, from outside the dev shell:
 #   nix run .#manage -- createsuperuser
 set -euo pipefail
@@ -16,7 +16,7 @@ set -euo pipefail
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 export PROJECT_ROOT
 # shellcheck source=./common.sh
-. "${PROJECT_ROOT}/scripts/nix/common.sh"
+. "${PROJECT_ROOT}/nix/scripts/common.sh"
 
 if [ "$#" -eq 0 ]; then
     echo "usage: ${0##*/} <command> [args...]" >&2
@@ -30,7 +30,7 @@ fi
 # is a warning rather than a hard failure - let Django report the connection
 # error itself if the command actually needs a cursor.
 if ! pg_ctl status --pgdata="${PGDATA}" >/dev/null 2>&1; then
-    echo "warning: PostgreSQL is not running (./scripts/nix/db-start.sh)" >&2
+    echo "warning: PostgreSQL is not running (./nix/scripts/db-start.sh)" >&2
 fi
 
 exec python "${MANAGE}" "$@"
