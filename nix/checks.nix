@@ -59,7 +59,7 @@ let
   # whatever the mirror serves at image build time without noticing.
   geoipDb = pkgs.fetchurl {
     url = "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb";
-    hash = "sha256-g5qQASLprttRzBUGUE44JP1mhbvofLoWmbPRlmkJSrg=";
+    hash = "sha256-lShTcqwD69Cs0dP88IMv/RQujgxLbohWu1qpxHhE5Tk=";
   };
 in
 {

@@ -1,8 +1,8 @@
 name: nix-checks
 
-# The Docker path is covered by test.yaml. This workflow covers the flake:
-# the deployment closure the QGIS infrastructure consumes, and the contracts
-# in nix/checks.nix that guard it.
+# The only test workflow: the deployment closure the QGIS infrastructure
+# consumes, and the contracts in nix/checks.nix that guard it. The Django unit
+# suite runs inside the integration check, against PostGIS in the build sandbox.
 on:
   pull_request:
     branches:
