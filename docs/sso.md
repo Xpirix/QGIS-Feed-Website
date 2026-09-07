@@ -18,8 +18,9 @@ remember, and nothing that can be phished out of you.
 
 You will receive an email from `noreply@qgis.org` with a setup link that is
 valid for **14 days**. It asks you to verify your address and enrol a passkey.
-Both are required, and once done the account is ready — no password is ever
-set on it.
+Both are required, and once done you are returned to the feed site already
+signed in — no password is ever set on the account, and there is no second
+login to perform.
 
 You need a device that can create a passkey. A passkey made on a phone or in
 iCloud Keychain, Google Password Manager or Bitwarden syncs across your
@@ -83,6 +84,7 @@ by hand for some other purpose survives a sign-in untouched.
 | `SSO_PROVISIONER_CLIENT_SECRET` | Service-account secret used by provisioning. Same rule. The web client must never hold `manage-users`. |
 | `SSO_REQUIRED_ACTIONS` | What Keycloak makes a new user complete. `VERIFY_EMAIL` and `webauthn-register-passwordless`: a passkey and nothing else, so no password or TOTP secret is ever created. |
 | `SSO_ADMIN_ACTION_MAX_USERS` | Accounts the admin action will provision in one request (25). |
+| `SSO_SETUP_REDIRECT_URI` | Where Keycloak returns somebody who has finished setting up. Points at `/oidc/authenticate/` so they arrive signed in rather than at a login form, and **must be registered as a valid redirect URI on the `feed-qgis-org` client**. |
 
 ### Everything happens in the admin
 

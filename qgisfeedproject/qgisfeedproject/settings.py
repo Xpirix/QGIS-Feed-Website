@@ -408,9 +408,13 @@ SSO_PROVISIONER_CLIENT_ID = os.environ.get(
 )
 SSO_PROVISIONER_CLIENT_SECRET = globals().get("SSO_PROVISIONER_CLIENT_SECRET", "")
 
+# Where Keycloak returns somebody who has just finished setting up. It starts
+# the OIDC flow rather than showing the login page: they have proved who they
+# are moments earlier, so Keycloak answers the authorisation request from the
+# session it just created and they arrive signed in.
 # Must also be a registered redirect URI on the feed-qgis-org client.
 SSO_SETUP_REDIRECT_URI = (
-    f"https://{os.environ.get("DOMAIN_NAME", "feed.qgis.org")}/accounts/login/"
+    f"https://{os.environ.get("DOMAIN_NAME", "feed.qgis.org")}/oidc/authenticate/"
 )
 
 # 14 days. Keycloak's default of 12 hours is far too short for a migration
