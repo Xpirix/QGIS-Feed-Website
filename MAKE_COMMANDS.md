@@ -15,15 +15,15 @@ The Nix column assumes you are inside `nix develop`.
 | Docker | Nix |
 |---|---|
 | `make dev-build` | not needed - `nix develop` builds the environment |
-| `make dev-start` | `./scripts/nix/db-start.sh` then `./scripts/nix/dev.sh` |
-| `make dev-stop` | `./scripts/nix/db-stop.sh` (Ctrl-C stops `dev`) |
-| `make dev-migrate` | `./scripts/nix/manage.sh migrate` |
-| `make dev-update-migrations` | `./scripts/nix/manage.sh makemigrations` |
-| `make dev-dbseed` | `./scripts/nix/db-reset.sh` (also recreates the schema) |
-| `make dev-dbrestore` | `./scripts/nix/db-restore.sh` (qgisfeed only - metabase is not in the Nix stack) |
-| `make dev-createsuperuser` | `./scripts/nix/manage.sh createsuperuser` |
-| `make dev-runtests` | `./scripts/nix/test.sh` |
-| `make dev-logs` | not applicable - `./scripts/nix/dev.sh` logs to the foreground |
+| `make dev-start` | `./nix/scripts/db-start.sh` then `./nix/scripts/dev.sh` |
+| `make dev-stop` | `./nix/scripts/db-stop.sh` (Ctrl-C stops `dev`) |
+| `make dev-migrate` | `./nix/scripts/manage.sh migrate` |
+| `make dev-update-migrations` | `./nix/scripts/manage.sh makemigrations` |
+| `make dev-dbseed` | `./nix/scripts/db-reset.sh` (also recreates the schema) |
+| `make dev-dbrestore` | `./nix/scripts/db-restore.sh` (qgisfeed only - metabase is not in the Nix stack) |
+| `make dev-createsuperuser` | `./nix/scripts/manage.sh createsuperuser` |
+| `make dev-runtests` | `./nix/scripts/test.sh` |
+| `make dev-logs` | not applicable - `./nix/scripts/dev.sh` logs to the foreground |
 
 The production commands have no Nix equivalent here: the NixOS deployment is
 managed with `nixosModules.qgisfeed` and `systemctl`, not the Makefile.

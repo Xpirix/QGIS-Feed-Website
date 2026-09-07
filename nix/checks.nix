@@ -5,7 +5,7 @@
 # sandbox and runs the Django suite, so it takes minutes.
 #
 # No test logic lives in this file: each check reads a committed script from
-# tests/nix and passes it what it needs through the derivation environment.
+# nix/tests and passes it what it needs through the derivation environment.
 {
   pkgs,
   pythonEnv,
@@ -70,7 +70,7 @@ in
   # shellcheck finding. SC1091 is excluded because common.sh is sourced through
   # a path resolved at runtime, which shellcheck cannot follow.
   shellcheck = pkgs.runCommand "shellcheck-scripts" { nativeBuildInputs = [ pkgs.shellcheck ]; } ''
-    shellcheck -e SC1091 ${../scripts/nix}/*.sh ${../tests/nix}/*.sh
+    shellcheck -e SC1091 ${./scripts}/*.sh ${./tests}/*.sh
     touch $out
   '';
 
@@ -82,21 +82,21 @@ in
   '';
 
   # The deployment interface: everything passthru advertises must exist.
-  passthru-contract = check "passthru-contract" appAttrs ../tests/nix/passthru-contract.sh;
+  passthru-contract = check "passthru-contract" appAttrs ./tests/passthru-contract.sh;
 
   # The environment variables settings.py reads, which the infrastructure
   # depends on and CONTRIBUTING.md documents.
   settings-contract = check "settings-contract" {
     nativeBuildInputs = [ pythonEnv ];
-    testScript = ../tests/nix/settings_contract.py;
+    testScript = ./tests/settings_contract.py;
     inherit appPythonPath;
-  } ../tests/nix/settings-contract.sh;
+  } ./tests/settings-contract.sh;
 
   # Models and migrations agree.
-  migration-drift = check "migration-drift" appAttrs ../tests/nix/migration-drift.sh;
+  migration-drift = check "migration-drift" appAttrs ./tests/migration-drift.sh;
 
   # The WSGI callable imports inside uWSGI's embedded interpreter.
-  uwsgi-app-load = check "uwsgi-app-load" appAttrs ../tests/nix/uwsgi-app-load.sh;
+  uwsgi-app-load = check "uwsgi-app-load" appAttrs ./tests/uwsgi-app-load.sh;
 
   # Slow tier: the Django test suite and one real request, against PostGIS.
   integration = check "integration" (
@@ -119,5 +119,5 @@ in
       settingsTemplate = ../qgisfeedproject/qgisfeedproject/settings_local_override.py.templ;
       inherit geoipDb;
     }
-  ) ../tests/nix/integration.sh;
+  ) ./tests/integration.sh;
 }

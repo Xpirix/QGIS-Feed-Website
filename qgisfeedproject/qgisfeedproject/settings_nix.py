@@ -2,7 +2,7 @@
 
 Almost everything is inherited. settings.py reads the database connection,
 MEDIA_ROOT, STATIC_ROOT, GEOIP_PATH and the GDAL and GEOS library paths from
-the environment, and scripts/nix/common.sh exports all of them pointing at the
+the environment, and nix/scripts/common.sh exports all of them pointing at the
 project-local cluster and state directory - so this module only has to relax
 ALLOWED_HOSTS for local browsing.
 

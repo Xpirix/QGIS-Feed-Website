@@ -28,13 +28,13 @@
       # 'extension "postgis" is not available'.
       postgresqlFor = pkgs: pkgs.postgresql_16.withPackages (ps: [ ps.postgis ]);
 
-      # Every helper is a committed dotfile under scripts/nix, wrapped so it
+      # Every helper is a committed dotfile under nix/scripts, wrapped so it
       # runs with a known set of tools on PATH. No shell logic lives in Nix.
       mkScript =
         pkgs: name: runtimeInputs:
         pkgs.writeShellApplication {
           inherit name runtimeInputs;
-          text = builtins.readFile (./scripts/nix + "/${name}.sh");
+          text = builtins.readFile (./nix/scripts + "/${name}.sh");
           # common.sh is sourced at runtime from the checkout, so shellcheck
           # cannot see the variables it defines.
           excludeShellChecks = [ "SC1091" ];
@@ -103,11 +103,11 @@
             GEOS_LIBRARY_PATH = "${pkgs.geos}/lib/libgeos_c${pkgs.stdenv.hostPlatform.extensions.sharedLibrary}";
             PROJ_LIB = "${pkgs.proj}/share/proj";
 
-            # The hook sources scripts/nix/common.sh, which needs to know where
+            # The hook sources nix/scripts/common.sh, which needs to know where
             # the checkout is before PROJECT_ROOT has been established.
             shellHook = ''
               export PROJECT_ROOT_HINT="$PWD"
-              source ${./scripts/nix/shell-hook.sh}
+              source ${./nix/scripts/shell-hook.sh}
             '';
           };
         }
