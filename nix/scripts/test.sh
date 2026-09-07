@@ -3,7 +3,7 @@
 #
 # Any extra arguments are passed through to manage.py test, so you can narrow
 # the run, for example:
-#   ./scripts/nix/test.sh qgisfeed.tests.FeedsItemFormTestCase
+#   ./nix/scripts/test.sh qgisfeed.tests.FeedsItemFormTestCase
 # or, from outside the dev shell:
 #   nix run .#test -- qgisfeed.tests.FeedsItemFormTestCase
 set -euo pipefail
@@ -13,10 +13,10 @@ set -euo pipefail
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 export PROJECT_ROOT
 # shellcheck source=./common.sh
-. "${PROJECT_ROOT}/scripts/nix/common.sh"
+. "${PROJECT_ROOT}/nix/scripts/common.sh"
 
 if ! pg_ctl status --pgdata="${PGDATA}" >/dev/null 2>&1; then
-    die "PostgreSQL is not running. Start it first: ./scripts/nix/db-start.sh"
+    die "PostgreSQL is not running. Start it first: ./nix/scripts/db-start.sh"
 fi
 
 # Several tests open MEDIA_ROOT/feedimages/rust.png. The repository ships that

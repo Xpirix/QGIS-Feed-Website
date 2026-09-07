@@ -7,7 +7,7 @@ set -euo pipefail
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 export PROJECT_ROOT
 # shellcheck source=./common.sh
-. "${PROJECT_ROOT}/scripts/nix/common.sh"
+. "${PROJECT_ROOT}/nix/scripts/common.sh"
 
 if [ ! -d "${PGDATA}" ]; then
     echo "No cluster at ${PGDATA}, nothing to stop"

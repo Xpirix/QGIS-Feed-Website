@@ -12,7 +12,7 @@ set -euo pipefail
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 export PROJECT_ROOT
 # shellcheck source=./common.sh
-. "${PROJECT_ROOT}/scripts/nix/common.sh"
+. "${PROJECT_ROOT}/nix/scripts/common.sh"
 
 mkdir -p "${PGSOCKET}"
 
@@ -27,7 +27,7 @@ if [ ! -d "${PGDATA}" ]; then
     # so it can never clash with a system PostgreSQL or be reached remotely.
     cat >>"${PGDATA}/postgresql.conf" <<EOF
 
-# Added by scripts/nix/db-start.sh
+# Added by nix/scripts/db-start.sh
 listen_addresses = ''
 unix_socket_directories = '${PGSOCKET}'
 EOF

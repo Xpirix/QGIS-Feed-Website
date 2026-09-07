@@ -28,7 +28,7 @@ initdb --username="${PGUSER}" --auth=trust --encoding=UTF8 --locale=C \
 # listen_addresses='' restricts the server to the unix socket below.
 cat >>"${PGDATA}/postgresql.conf" <<EOF
 
-# Added by tests/nix/integration.sh
+# Added by nix/tests/integration.sh
 listen_addresses = ''
 unix_socket_directories = '${PGHOST}'
 fsync = off

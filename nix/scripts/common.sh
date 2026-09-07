@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Shared environment for the Nix-based QGIS Feed development stack.
 #
-# Sourced by every scripts/nix/*.sh helper and by the devShell hook. Everything
+# Sourced by every nix/scripts/*.sh helper and by the devShell hook. Everything
 # here is derived from the repository location at runtime so that no Nix store
 # path is ever baked into a committed file.
 
@@ -19,7 +19,7 @@ fi
 # It is parsed, not sourced: sourcing would execute whatever is in the file, and
 # docker compose does not give .env shell semantics either. Precedence is
 #   explicit shell environment  >  .env  >  the defaults set below
-# so `QGISFEED_BACKUP_VOLUME=/tmp ./scripts/nix/db-restore.sh` still works.
+# so `QGISFEED_BACKUP_VOLUME=/tmp ./nix/scripts/db-restore.sh` still works.
 #
 # Keys describing the docker stack are ignored: taking them would point the
 # Nix path at the docker database role and at the docker settings override
