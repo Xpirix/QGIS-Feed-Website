@@ -312,14 +312,15 @@ Two things worth knowing if you edit these:
   `CreateExtension`, so without that the test database Django creates has no
   `geometry` type and the run dies before the first test.
 - `integration` fetches `GeoLite2-City.mmdb` from the same mirror as
-  `Dockerfile`, pinned by hash. `signals.py` constructs a `GeoIP2()` on every
-  visit and `test_ip_address_removed` asserts a real lookup, so the suite
-  cannot run without it. The file must keep that exact name: given a
+  `Dockerfile`, pinned by hash to a dated release tag. `signals.py` constructs
+  a `GeoIP2()` on every visit and the geofencing tests assert real lookups, so
+  the suite cannot run without it. The file must keep that exact name: given a
   directory, Django looks for the filenames in `GEOIP_SETTINGS` rather than
-  scanning for any `.mmdb`. The URL is a rolling tag, so when upstream
-  refreshes the database the check fails with a hash mismatch; regenerate it
-  with `nix store prefetch-file --name GeoLite2-City.mmdb <url>` and commit
-  the new hash.
+  scanning for any `.mmdb`. `Dockerfile` tracks the mirror's `download` branch,
+  which is force-pushed whenever MaxMind publishes; the check pins a release
+  asset instead, so the database moves only when someone picks a newer tag from
+  <https://github.com/P3TERX/GeoLite.mmdb/releases> and regenerates the hash
+  with `nix store prefetch-file --name GeoLite2-City.mmdb <url>`.
 
 For a normal development run against the project-local cluster, use
 `./scripts/nix/test.sh` (or `nix run .#test`) instead - it is much faster than

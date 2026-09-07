@@ -7,8 +7,8 @@
 # with a developer's own PostgreSQL or be reached from anywhere.
 #
 # shellcheck disable=SC2154  # app, manageProgram, uwsgiProgram, uwsgiIni,
-# fixtureImage, geoipDb and out are supplied as derivation attributes by
-# nix/checks.nix.
+# fixtureImage, settingsTemplate, geoipDb and out are supplied as derivation
+# attributes by nix/checks.nix.
 set -euo pipefail
 
 export HOME="${TMPDIR}/home"
@@ -68,6 +68,18 @@ cp "${geoipDb}" "${GEOIP_PATH}/GeoLite2-City.mmdb"
 # copied straight from the source tree.
 cp "${fixtureImage}" "${MEDIA_ROOT}/feedimages/rust.png"
 chmod u+w "${MEDIA_ROOT}/feedimages/rust.png"
+
+# settings.py applies this last, so it has the final word over the environment
+# exported above. The template is the only version of the file a checkout has -
+# the real one is git-ignored - and it carries settings that exist nowhere else,
+# so without it the run would leave OIDC_RP_CLIENT_SECRET undefined.
+#
+# It has to be copied under a .py name: spec_from_file_location picks its loader
+# by extension, and a .templ path yields no loader, which fails as an
+# AttributeError that apply_local_settings_override does not catch.
+echo "== Installing the local settings override =="
+export DJANGO_LOCAL_SETTINGS="${TMPDIR}/settings_local_override.py"
+cp "${settingsTemplate}" "${DJANGO_LOCAL_SETTINGS}"
 
 echo "== migrate =="
 "${manage}" migrate --noinput
