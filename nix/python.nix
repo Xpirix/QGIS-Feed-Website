@@ -9,7 +9,14 @@
 { pkgs }:
 
 let
-  python = pkgs.python312;
+  # sentry-sdk 2.60.0 fails its own test_get_current_thread_meta_main_thread
+  # when pytest forks inside the Nix sandbox. Upstream's test, not our code.
+  python = pkgs.python312.override {
+    packageOverrides = _final: prev: {
+      sentry-sdk = prev.sentry-sdk.overridePythonAttrs (_: { doCheck = false; });
+    };
+    self = python;
+  };
 
   # nixpkgs 26.05 ships Django 5.2 as the default `django` attribute (Django 4
   # was dropped at its April 2026 end of life), which is exactly what this

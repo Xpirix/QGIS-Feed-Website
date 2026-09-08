@@ -89,6 +89,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `last_login` write that happens immediately after authentication.
 - `nix run .#test` and the Nix integration check run `qgis_sso` alongside
   `qgisfeed`.
+- The Python environment skips `sentry-sdk`'s own test suite, one case of which
+  fails inside the Nix sandbox and took every `nix build` down with it. Nothing
+  about this project is under test there.
 
 ### Security
 
