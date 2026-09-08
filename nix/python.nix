@@ -13,7 +13,9 @@ let
   # when pytest forks inside the Nix sandbox. Upstream's test, not our code.
   python = pkgs.python312.override {
     packageOverrides = _final: prev: {
-      sentry-sdk = prev.sentry-sdk.overridePythonAttrs (_: { doCheck = false; });
+      sentry-sdk = prev.sentry-sdk.overridePythonAttrs (_: {
+        doCheck = false;
+      });
     };
     self = python;
   };
