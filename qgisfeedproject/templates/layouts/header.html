@@ -22,13 +22,6 @@
                             Manage
                         </a>
                     {% endif %}
-                    {# Superuser only, matching the view: these buttons write to a realm shared with hub and plugins. #}
-                    {% if user.is_superuser %}
-                        <a class="navbar-item has-text-weight-semibold is-size-7"
-                            href="{% url "qgis_sso:enrolment" %}">
-                            {% trans "SSO enrolment" %}
-                        </a>
-                    {% endif %}
                 </div>
                 <div class="navbar-end">
                     {% if user.is_authenticated and not user.username == 'qgis_user' %}
@@ -43,6 +36,13 @@
                                 class="navbar-item has-text-weight-semibold is-size-7">
                                 {% trans "Profile" %}
                             </a>
+                            {# Superuser only, matching the view: these buttons write to a realm shared with hub and plugins. #}
+                            {% if user.is_superuser %}
+                                <a class="navbar-item has-text-weight-semibold is-size-7"
+                                    href="{% url "qgis_sso:enrolment" %}">
+                                    {% trans "SSO enrolment" %}
+                                </a>
+                            {% endif %}
                             <form method="POST" action="{% url 'oidc_logout' %}">
                                 {% csrf_token %}
                                 <button type="submit"
