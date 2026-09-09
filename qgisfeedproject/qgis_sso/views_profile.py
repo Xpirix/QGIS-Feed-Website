@@ -35,6 +35,17 @@ def signed_in(request):
     return bool(request.session.get(SESSION_KEY))
 
 
+def trusted(user):
+    """Whether this account may still change anything.
+
+    A suspended account stays active and can sign in, which US-5.2 asks for.
+    Nothing else about it should work, and each view remembering that on its
+    own is how one of them forgets.
+    """
+    identity = getattr(user, "keycloak_identity", None)
+    return identity is None or identity.trusted
+
+
 @method_decorator(never_cache, name="dispatch")
 class ProfileView(View):
     """Somebody's own account: who they are here, and their passkeys."""

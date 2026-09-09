@@ -87,6 +87,10 @@ class FakeRealm:
         self.linked = []
         self.link_payloads = []
         self.assigned = []
+        self.removed = []
+        self.logged_out = []
+        self.disabled = []
+        self.enabled = []
         #: Set to answer a magic-link request with a different subject, the
         #: case where a username has resolved to somebody else in the realm.
         self.answer_with_subject = None
@@ -112,6 +116,15 @@ class FakeRealm:
 
     def assign_client_roles(self, user_id, client_uuid, roles):
         self.assigned.append((user_id, [role["name"] for role in roles]))
+
+    def remove_client_roles(self, user_id, client_uuid, roles):
+        self.removed.append((user_id, [role["name"] for role in roles]))
+
+    def end_sessions(self, user_id):
+        self.logged_out.append(user_id)
+
+    def set_user_enabled(self, user_id, enabled):
+        (self.enabled if enabled else self.disabled).append(user_id)
 
     def execute_actions_email(self, sub, actions, **kwargs):
         self.emailed.append(sub)
