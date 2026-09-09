@@ -97,7 +97,12 @@ class TrustChainTest(TestCase):
         identity.trust_state = TrustState.SUSPENDED
         identity.save(update_fields=["trust_state"])
 
-        self.assertFalse(revocation.may_revoke(self.rita, self.identity(self.nils)))
+        # Re-read: creating the identity cached it on the user object, so the
+        # one held here still says active. Every real caller loads the user
+        # fresh from the session.
+        rita = User.objects.get(pk=self.rita.pk)
+
+        self.assertFalse(revocation.may_revoke(rita, self.identity(self.nils)))
 
     # -- the blast radius --------------------------------------------------
 
@@ -190,9 +195,10 @@ class TrustChainTest(TestCase):
 
         self.revoke(self.root, self.rita)
         backend = QGISOIDCAuthenticationBackend()
+        rita = User.objects.get(pk=self.rita.pk)
 
         with self.assertRaises(SuspiciousOperation):
-            backend.refuse_if_revoked(self.rita, {"sub": "sub-rita"})
+            backend.refuse_if_revoked(rita, {"sub": "sub-rita"})
 
     def test_a_suspended_subject_may_still_sign_in(self):
         """US-5.2 is explicit: they can sign in and see why."""
@@ -200,8 +206,9 @@ class TrustChainTest(TestCase):
 
         self.revoke(self.root, self.rita)
         backend = QGISOIDCAuthenticationBackend()
+        ali = User.objects.get(pk=self.ali.pk)
 
-        backend.refuse_if_revoked(self.ali, {"sub": "sub-ali"})
+        backend.refuse_if_revoked(ali, {"sub": "sub-ali"})
 
     # -- giving it back ----------------------------------------------------
 

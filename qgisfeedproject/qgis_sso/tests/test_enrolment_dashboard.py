@@ -175,15 +175,16 @@ class AccessTest(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn(reverse("login"), response["Location"])
 
-    def test_a_staff_user_is_not_enough(self):
-        """The service account behind these buttons can grant roles on this
-        site, in a realm shared with hub and plugins."""
+    def test_the_list_is_open_but_inviting_an_existing_user_is_not(self):
+        """The list scopes what each person sees rather than turning them away.
+        Grafting an existing account reaches the whole user list, so that stays
+        superuser-only."""
         staff = User.objects.create_user(
             "bob", "bob@example.org", "x", is_staff=True, is_superuser=False
         )
         self.client.force_login(staff, backend=LOCAL_BACKEND)
 
-        self.assertEqual(self.client.get(PAGE).status_code, 302)
+        self.assertEqual(self.client.get(PAGE).status_code, 200)
         self.assertEqual(self.client.get(CREATE).status_code, 302)
 
 

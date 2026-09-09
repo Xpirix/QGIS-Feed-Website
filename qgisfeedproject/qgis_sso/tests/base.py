@@ -20,6 +20,9 @@ CLIENT_ID = "feed-qgis-org"
 
 SSO_SETTINGS = {
     "SSO_ISSUER": ISSUER,
+    # Pinned, not inherited. The deployment's .env turns this on, and a test
+    # about subject matching should not change its answer because of that.
+    "SSO_MIGRATION_LINKING": False,
     "OIDC_RP_CLIENT_ID": CLIENT_ID,
     "SSO_MANAGED_GROUPS": ["qgisfeedentry_authors", "qgisfeedentry_approver"],
     "SSO_ROLE_MAP": {
