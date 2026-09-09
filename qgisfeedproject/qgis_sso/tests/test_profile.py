@@ -122,6 +122,8 @@ class ProfileTest(TestCase):
         response = self.visit()
 
         self.assertContains(response, "does not sign in through auth.qgis.org")
+        # And is not sent to an account console it has no account in.
+        self.assertNotContains(response, "Edit profile")
 
     def test_an_anonymous_visitor_is_sent_to_the_login_page(self):
         """QgisFeedUserVisitMiddleware substitutes a shared account on

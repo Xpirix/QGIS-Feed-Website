@@ -11,6 +11,7 @@ to auth.qgis.org and no other site can create or delete one.
 <div class="sso-profile">
   <h1 class="title is-4">{% trans "Your account" %}</h1>
     <div class="box-content mb-5">
+      {% if identity %}
       <div class="is-flex is-justify-content-end">
         <a class="button is-light" href="{{ SSO_ACCOUNT_URL }}"
             target="_blank" rel="noopener noreferrer">
@@ -18,6 +19,7 @@ to auth.qgis.org and no other site can create or delete one.
             <span>{% trans "Edit profile" %}</span>
         </a>
       </div>
+      {% endif %}
       <table class="table is-fullwidth sso-table">
         <tbody>
           <tr>
