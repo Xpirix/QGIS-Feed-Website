@@ -253,6 +253,11 @@ class EnrolmentView(View):
         for row in matching:
             counts[row.state] += 1
 
+        # Kept before the search and state filters are applied, so an empty
+        # table can say whether there is nothing to show or nothing matching.
+        # They need different words and one of them is not the reader's fault.
+        anything_at_all = bool(matching)
+
         if search:
             needle = search.lower()
             matching = [
@@ -280,6 +285,8 @@ class EnrolmentView(View):
             "totals": [(key, STATES[key][0], counts[key]) for key in LINKED_STATES],
             "may_invite_new": bool(invitable_roles(request.user)),
             "everyone": request.user.is_superuser,
+            "anything_at_all": anything_at_all,
+            "in_the_realm": hasattr(request.user, "keycloak_identity"),
             # Shown once, then gone: put here by the invite form across its
             # redirect, because a credential cannot go through messages.
             "issued": request.session.pop(ISSUED_SESSION_KEY, None),
@@ -413,7 +420,12 @@ class InviteNewView(View):
             return HttpResponseRedirect(
                 f"{reverse('login')}?next={reverse('qgis_sso:invite_new')}"
             )
-        if not trusted(request.user):
+        # trusted() is true for an account with no realm identity at all -
+        # it is about suspension, not capability. Whether there is anything to
+        # offer is a separate question, and asking it here rather than leaving
+        # the page to render an empty form keeps this route consistent with
+        # Invite existing, which also turns away anybody who cannot use it.
+        if not trusted(request.user) or not invitable_roles(request.user):
             messages.error(request, _("Your account cannot invite anybody."))
             return HttpResponseRedirect(reverse("qgis_sso:enrolment"))
         return super().dispatch(request, *args, **kwargs)
