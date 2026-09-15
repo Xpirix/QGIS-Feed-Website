@@ -67,6 +67,9 @@ let
       ps.user-agents
       ps.ua-parser
 
+      # QR codes
+      ps.segno
+
       # Misc
       ps.sentry-sdk
       ps.sqlparse
