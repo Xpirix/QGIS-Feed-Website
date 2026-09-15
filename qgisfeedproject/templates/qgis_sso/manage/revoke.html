@@ -114,8 +114,12 @@ walked back casually.
         </a>
       </div>
       <p class="help">
-        {% blocktrans trimmed with days=grace_days %}
-          Reversible in one action for {{ days }} days, subtree included.
+        {% blocktrans trimmed count counter=grace_days %}
+          You can undo this, and everyone it reaches, in one action for
+          {{ counter }} day.
+        {% plural %}
+          You can undo this, and everyone it reaches, in one action for
+          {{ counter }} days.
         {% endblocktrans %}
       </p>
     </form>

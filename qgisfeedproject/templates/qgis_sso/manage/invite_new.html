@@ -15,7 +15,7 @@ suggestion.
       <p class="subtitle is-6">
         {% blocktrans trimmed %}
           Somebody with no QGIS account yet. Their account is created straight
-          away; nothing is sent until you send it.
+          away. Nothing is sent until you send it.
         {% endblocktrans %}
       </p>
     </div>
@@ -68,9 +68,9 @@ suggestion.
         <div class="control">
           <div class="select">
             <select id="role" name="role">
-              {% for role in roles %}
-                <option value="{{ role }}"
-                        {% if form.role == role %}selected{% endif %}>{{ role }}</option>
+              {% for value, name in roles %}
+                <option value="{{ value }}"
+                        {% if form.role == value %}selected{% endif %}>{{ name }}</option>
               {% endfor %}
             </select>
           </div>

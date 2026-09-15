@@ -1,0 +1,374 @@
+{% extends 'layouts/base-fullscreen.html' %}
+{% load i18n %}
+
+{% comment %}
+The contributor's guide to signing in. Open to anybody, because somebody locked
+out cannot read a page behind the login. The role ladder is built from the same
+settings the rules are enforced from, so it cannot drift.
+{% endcomment %}
+
+{% block content %}
+<div class="sso-help">
+
+  <h1 class="title is-3">{% trans "How signing in and invitations work" %}</h1>
+  <p class="subtitle is-6">
+    {% blocktrans trimmed %}
+      Everything you need to take part in the QGIS news feed. If you cannot find
+      your answer here, ask a feed maintainer.
+    {% endblocktrans %}
+  </p>
+
+  <nav class="box-content mb-5" aria-labelledby="contents-heading">
+    <h2 class="title is-6" id="contents-heading">{% trans "On this page" %}</h2>
+    <ul class="sso-help-contents">
+      <li><a href="#account">{% trans "How do I get a QGIS account?" %}</a></li>
+      <li><a href="#link">{% trans "Someone sent me a link. What do I do?" %}</a></li>
+      <li><a href="#passkeys">{% trans "What is a passkey?" %}</a></li>
+      <li><a href="#add-passkey">{% trans "How do I add a passkey?" %}</a></li>
+      <li><a href="#remove-passkey">{% trans "How do I remove a passkey?" %}</a></li>
+      <li><a href="#lost-device">{% trans "I have lost the device with my passkey" %}</a></li>
+      <li><a href="#permissions">{% trans "What am I allowed to do here?" %}</a></li>
+      <li><a href="#trust">{% trans "Who can I invite?" %}</a></li>
+      <li><a href="#invite">{% trans "How do I invite someone?" %}</a></li>
+      <li><a href="#withdrawn">{% trans "What happens if trust is withdrawn?" %}</a></li>
+      <li><a href="#suspended">{% trans "My account says suspended" %}</a></li>
+      <li><a href="#stuck">{% trans "I cannot sign in" %}</a></li>
+    </ul>
+  </nav>
+
+  <section class="box-content mb-5" id="account">
+    <h2 class="title is-5">{% trans "How do I get a QGIS account?" %}</h2>
+    <p>
+      {% blocktrans trimmed %}
+        Somebody invites you. There is no sign up form, and having an account on
+        another QGIS site is not enough on its own. Every account here exists
+        because a named person vouched for it. That is what lets us give
+        contributors real editing rights without knowing everybody personally.
+      {% endblocktrans %}
+    </p>
+    <p class="mt-3">
+      {% blocktrans trimmed %}
+        So ask someone who already writes for the feed, or ask a feed
+        maintainer. They create the account and send you a link.
+      {% endblocktrans %}
+    </p>
+  </section>
+
+  <section class="box-content mb-5" id="link">
+    <h2 class="title is-5">{% trans "Someone sent me a link. What do I do?" %}</h2>
+    <p>
+      {% blocktrans trimmed %}
+        The link signs you in once, so that you can set the account up. Treat it
+        like a password and do not pass it on.
+      {% endblocktrans %}
+    </p>
+    <ol class="sso-help-steps mt-3">
+      <li>
+        {% blocktrans trimmed %}
+          Open the link on the device you want to sign in with from now on. Your
+          phone or your laptop both work.
+        {% endblocktrans %}
+      </li>
+      <li>{% trans "Confirm your email address when you are asked to." %}</li>
+      <li>{% trans "Create a passkey. Your device will offer to do this for you." %}</li>
+    </ol>
+    <p class="mt-3">
+      {% blocktrans trimmed %}
+        That is it. From then on you sign in with the passkey and the link is
+        finished. If the link has expired, ask for a fresh one.
+      {% endblocktrans %}
+    </p>
+  </section>
+
+  <section class="box-content mb-5" id="passkeys">
+    <h2 class="title is-5">{% trans "What is a passkey?" %}</h2>
+    <p>
+      {% blocktrans trimmed %}
+        A passkey lets your device prove who you are, using the same face scan,
+        fingerprint or screen lock you already use to unlock it. There is no
+        password on your QGIS account at all.
+      {% endblocktrans %}
+    </p>
+    <p class="mt-3">
+      {% blocktrans trimmed %}
+        This is safer and quicker. There is no password to forget, to reuse, or
+        for somebody to steal, and a passkey cannot be handed over to a fake
+        sign in page by mistake.
+      {% endblocktrans %}
+    </p>
+    <p class="mt-3">
+      {% blocktrans trimmed %}
+        A passkey can live on your phone, your laptop, or a hardware key you
+        plug in. Keep at least two, on two different devices. Losing your only
+        passkey means losing your way in.
+      {% endblocktrans %}
+    </p>
+  </section>
+
+  <section class="box-content mb-5" id="add-passkey">
+    <h2 class="title is-5">{% trans "How do I add a passkey?" %}</h2>
+    <ol class="sso-help-steps">
+      <li>
+        {% blocktrans trimmed %}
+          Open <a href="{{ profile_url }}">Your account</a> from the menu under
+          your name.
+        {% endblocktrans %}
+      </li>
+      <li>{% trans "Choose Add a passkey." %}</li>
+      <li>
+        {% blocktrans trimmed %}
+          Sign in as usual, then follow what your device asks. The new passkey
+          belongs to whichever device you are using at that moment, so use the
+          one you want to add.
+        {% endblocktrans %}
+      </li>
+    </ol>
+  </section>
+
+  <section class="box-content mb-5" id="remove-passkey">
+    <h2 class="title is-5">{% trans "How do I remove a passkey?" %}</h2>
+    <p>
+      {% blocktrans trimmed %}
+        Open <a href="{{ profile_url }}">Your account</a>, find the passkey in
+        the list, and choose the remove button beside it.
+      {% endblocktrans %}
+    </p>
+    <p class="mt-3">
+      {% blocktrans trimmed %}
+        You cannot remove your last passkey. There is no password to fall back
+        on, so it would lock you out. Add a second one first, then remove the
+        one you no longer want.
+      {% endblocktrans %}
+    </p>
+  </section>
+
+  <section class="box-content mb-5" id="lost-device">
+    <h2 class="title is-5">{% trans "I have lost the device with my passkey" %}</h2>
+    <p>
+      {% blocktrans trimmed %}
+        Sign in with one of your other passkeys, open
+        <a href="{{ profile_url }}">Your account</a>, and remove the one on the
+        lost device. Do this even if the device was locked.
+      {% endblocktrans %}
+    </p>
+    <p class="mt-3">
+      {% blocktrans trimmed %}
+        If that was your only passkey, you cannot get in by yourself. Ask a feed
+        maintainer for a new enrolment link and set the account up again.
+      {% endblocktrans %}
+    </p>
+  </section>
+
+  <section class="box-content mb-5" id="permissions">
+    <h2 class="title is-5">{% trans "What am I allowed to do here?" %}</h2>
+    <p>
+      {% blocktrans trimmed %}
+        Your role decides it. Open <a href="{{ profile_url }}">Your account</a>
+        to see what yours lets you do. Roles are refreshed every time you sign
+        in, so if yours has just changed, sign out and in again.
+      {% endblocktrans %}
+    </p>
+    <div class="table-container mt-4">
+      <table class="table is-fullwidth sso-table">
+        <caption class="is-sr-only">
+          {% trans "Every role, most trusted first, and what it allows" %}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col" class="sso-account">{% trans "Role" %}</th>
+            <th scope="col" class="sso-account">{% trans "What it does" %}</th>
+            <th scope="col">{% trans "Open invitations" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for role in ladder %}
+            <tr>
+              <th scope="row" class="sso-account">{{ role.name }}</th>
+              <td class="sso-account">{{ role.summary }}</td>
+              <td>
+                {% if role.unlimited %}
+                  {% trans "No limit" %}
+                {% else %}
+                  {% blocktrans trimmed count counter=role.quota %}
+                    {{ counter }} at a time
+                  {% plural %}
+                    {{ counter }} at a time
+                  {% endblocktrans %}
+                {% endif %}
+              </td>
+              {# Both forms read the same in English. Translators need them apart. #}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="box-content mb-5" id="trust">
+    <h2 class="title is-5">{% trans "Who can I invite?" %}</h2>
+    <p>
+      {% blocktrans trimmed %}
+        People at your own level or below, never above. You cannot hand out more
+        than you hold, which is what stops the chain of trust being climbed.
+      {% endblocktrans %}
+    </p>
+    <ul class="sso-help-ladder mt-4">
+      {% for role in ladder %}
+        <li>
+          {% blocktrans trimmed with name=role.name offered=role.invites|join:", " %}
+            {{ name }} can invite: {{ offered }}
+          {% endblocktrans %}
+        </li>
+      {% endfor %}
+    </ul>
+    <p class="mt-4">
+      {% blocktrans trimmed %}
+        There is also a limit on how many invitations you can have open at once.
+        An invitation counts as open until the person signs in for the first
+        time. When they do, the place frees up and you can invite somebody else.
+      {% endblocktrans %}
+    </p>
+  </section>
+
+  <section class="box-content mb-5" id="invite">
+    <h2 class="title is-5">{% trans "How do I invite someone?" %}</h2>
+    <ol class="sso-help-steps">
+      <li>{% trans "Open People from the menu under your name." %}</li>
+      <li>{% trans "Choose Invite, then New user." %}</li>
+      <li>
+        {% blocktrans trimmed %}
+          Fill in their name, their email address and the role you are giving
+          them. The account is created straight away. Nothing is sent yet.
+        {% endblocktrans %}
+      </li>
+      <li>
+        {% blocktrans trimmed %}
+          Send them the setup email, or take the enrolment link and hand it over
+          yourself. The link is shown once and is never stored, so copy it
+          before you leave the page.
+        {% endblocktrans %}
+      </li>
+    </ol>
+    <div class="notification is-warning mt-4">
+      {% blocktrans trimmed %}
+        The link signs its holder in as that person. Give it to them and nobody
+        else, the way you would a password. If you are in the same room, the QR
+        code beside it is the safest way to pass it over.
+      {% endblocktrans %}
+    </div>
+    <p class="mt-3">
+      {% blocktrans trimmed %}
+        You are vouching for them. If they misuse the account, that reflects on
+        you, and withdrawing trust from you reaches them too.
+      {% endblocktrans %}
+    </p>
+  </section>
+
+  <section class="box-content mb-5" id="withdrawn">
+    <h2 class="title is-5">{% trans "What happens if trust is withdrawn?" %}</h2>
+    <p>
+      {% blocktrans trimmed %}
+        Trust is withdrawn when somebody should no longer have access, for
+        example when they leave a role or an account is misused. It is a
+        deliberate act by a maintainer, with a reason recorded.
+      {% endblocktrans %}
+    </p>
+    <ul class="sso-help-list mt-3">
+      <li>{% trans "That person loses every role and cannot sign in again." %}</li>
+      <li>
+        {% blocktrans trimmed %}
+          It applies to their QGIS account, so it holds across every QGIS site,
+          not only this one.
+        {% endblocktrans %}
+      </li>
+      <li>
+        {% blocktrans trimmed %}
+          Everybody they invited is suspended, and everybody those people
+          invited, all the way down.
+        {% endblocktrans %}
+      </li>
+      <li>
+        {% blocktrans trimmed %}
+          Their published news items stay up and are still credited to them.
+          Nothing is deleted.
+        {% endblocktrans %}
+      </li>
+      <li>
+        {% blocktrans trimmed %}
+          Anything of theirs waiting to be published goes back to draft, so it
+          cannot go out without somebody looking at it again.
+        {% endblocktrans %}
+      </li>
+    </ul>
+    <p class="mt-3">
+      {% blocktrans trimmed count counter=grace_days %}
+        A maintainer can undo the whole thing in one action for {{ counter }}
+        day afterwards. After that, getting access back means being invited
+        again.
+      {% plural %}
+        A maintainer can undo the whole thing in one action for {{ counter }}
+        days afterwards. After that, getting access back means being invited
+        again.
+      {% endblocktrans %}
+    </p>
+  </section>
+
+  <section class="box-content mb-5" id="suspended">
+    <h2 class="title is-5">{% trans "My account says suspended" %}</h2>
+    <p>
+      {% blocktrans trimmed %}
+        Suspended is not the same as withdrawn. It means the person who vouched
+        for you lost their access, so yours is paused while somebody looks at
+        it. You have not done anything wrong.
+      {% endblocktrans %}
+    </p>
+    <p class="mt-3">
+      {% blocktrans trimmed %}
+        You can still sign in and read, but you cannot change anything. Your
+        work is untouched. Ask a feed maintainer, who can either put it back or
+        find you a new sponsor.
+      {% endblocktrans %}
+    </p>
+  </section>
+
+  <section class="box-content mb-5" id="stuck">
+    <h2 class="title is-5">{% trans "I cannot sign in" %}</h2>
+    <p>{% trans "There are three common reasons." %}</p>
+    <dl class="sso-help-reasons mt-3">
+      <dt>{% trans "You need an invitation" %}</dt>
+      <dd>
+        {% blocktrans trimmed %}
+          Your QGIS account works, but there is no account for you on this site
+          yet. Ask a feed maintainer to invite you, and tell them the QGIS
+          account name you signed in with.
+        {% endblocktrans %}
+      </dd>
+
+      <dt>{% trans "You do not have access to that page" %}</dt>
+      <dd>
+        {% blocktrans trimmed %}
+          You are signed in, but your role does not cover that page. Sign out
+          and in again first, because roles are refreshed at each sign in. If it
+          still will not open, ask a feed maintainer to check your role.
+        {% endblocktrans %}
+      </dd>
+
+      <dt>{% trans "Too many sign in attempts" %}</dt>
+      <dd>
+        {% blocktrans trimmed %}
+          Wait a few minutes and try again. We slow repeated attempts down to
+          keep accounts safe.
+        {% endblocktrans %}
+      </dd>
+    </dl>
+    <p class="mt-4">
+      {% blocktrans trimmed %}
+        Anything else, ask a feed maintainer. Creating roles, changing what a
+        role is allowed to do, and setting up the account service are jobs for
+        them.
+      {% endblocktrans %}
+    </p>
+  </section>
+
+</div>
+{% endblock content %}
