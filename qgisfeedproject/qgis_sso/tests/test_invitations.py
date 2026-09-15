@@ -233,24 +233,6 @@ class ScopingTest(TestCase):
         self.client.force_login(self.superuser, backend=LOCAL_BACKEND)
         self.assertEqual(self.client.get(INVITE_EXISTING).status_code, 200)
 
-    def test_an_empty_table_says_which_kind_of_empty_it_is(self):
-        """Four situations look identical as a blank table, and only one of
-        them is something the reader did."""
-        self.client.force_login(self.superuser, backend=LOCAL_BACKEND)
-        self.assertContains(self.client.get(MANAGE + "?q=nobody"), "No account matches")
-
-        # Somebody in the realm who has vouched for nobody.
-        alone = contributor("alone", ["author"])
-        self.client.force_login(alone, backend=LOCAL_BACKEND)
-        self.assertContains(self.client.get(MANAGE), "have not invited anybody")
-
-        # A local-only account: nothing here, and nothing it can do about it.
-        local = User.objects.create_user("local", "local@example.org", "x")
-        self.client.force_login(local, backend=LOCAL_BACKEND)
-        response = self.client.get(MANAGE)
-        self.assertContains(response, "nothing here for you")
-        self.assertContains(response, "A feed maintainer can move")
-
     def test_the_invite_menu_offers_only_what_you_may_use(self):
         self.client.force_login(self.reviewer, backend=LOCAL_BACKEND)
 

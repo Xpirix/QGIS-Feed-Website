@@ -253,11 +253,6 @@ class EnrolmentView(View):
         for row in matching:
             counts[row.state] += 1
 
-        # Kept before the search and state filters are applied, so an empty
-        # table can say whether there is nothing to show or nothing matching.
-        # They need different words and one of them is not the reader's fault.
-        anything_at_all = bool(matching)
-
         if search:
             needle = search.lower()
             matching = [
@@ -285,8 +280,6 @@ class EnrolmentView(View):
             "totals": [(key, STATES[key][0], counts[key]) for key in LINKED_STATES],
             "may_invite_new": bool(invitable_roles(request.user)),
             "everyone": request.user.is_superuser,
-            "anything_at_all": anything_at_all,
-            "in_the_realm": hasattr(request.user, "keycloak_identity"),
             # Shown once, then gone: put here by the invite form across its
             # redirect, because a credential cannot go through messages.
             "issued": request.session.pop(ISSUED_SESSION_KEY, None),
