@@ -13,11 +13,10 @@ cannot survive paging, and a whole wave is what the Django admin is for.
     <div>
       <h1 class="title is-4">{% trans "People" %}</h1>
       <p class="subtitle is-6">
-        {% if everyone %}
-          {% trans "Everyone with a QGIS account." %}
-        {% else %}
-          {% trans "People you have invited." %}
-        {% endif %}
+        {% blocktrans trimmed %}
+          Accounts here are created by invitation. Invite people, get the invitation link, and
+          withdraw trust when you need to.
+        {% endblocktrans %}
       </p>
       <p>
         <i class="fa-solid fa-circle-info has-text-success mr-1" aria-hidden="true"></i>

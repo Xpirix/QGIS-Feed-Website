@@ -14,9 +14,17 @@
           <hr class="login-hr" />
           <p class="subtitle">
             {% if LOCAL_LOGIN_ENABLED %}
-              {% trans "Use your QGIS account, or your username and password." %}
+              {% blocktrans trimmed %}
+                Your QGIS account signs you in here and on other QGIS sites.
+                You sign in with a passkey, so there is no password to
+                remember. Your username and password also still work.
+              {% endblocktrans %}
             {% else %}
-              {% trans "Use your QGIS account." %}
+              {% blocktrans trimmed %}
+                Your QGIS account signs you in here and on other QGIS sites.
+                You sign in with a passkey, so there is no password to
+                remember.
+              {% endblocktrans %}
             {% endif %}
           </p>
           {% if LOCAL_LOGIN_ENABLED %}

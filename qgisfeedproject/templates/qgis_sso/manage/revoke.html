@@ -13,10 +13,10 @@ walked back casually.
     <div>
       <h1 class="title is-4">
         {% blocktrans trimmed with username=blast.target.user.username %}
-          Withdraw trust from {{ username }}?
+          Withdraw trust from {{ username }}
         {% endblocktrans %}
+        ({{ blast.target.user.email }})?
       </h1>
-      <p class="subtitle is-6">{{ blast.target.user.email }}</p>
     </div>
     <a class="button is-light" href="{% url 'qgis_sso:enrolment' %}">
       {% trans "Back" %}
@@ -71,8 +71,8 @@ walked back casually.
     <p class="mb-4">
       {% blocktrans trimmed %}
         Their entries, reviews and revisions are kept and stay attributed to
-        them. Anything of theirs waiting to be published goes back to draft, so
-        it cannot be published by somebody who has not heard.
+        them. Anything of theirs waiting to be published goes back to draft
+        and cannot be published anymore.
       {% endblocktrans %}
     </p>
 

@@ -10,6 +10,12 @@ to auth.qgis.org and no other site can create or delete one.
 {% block content %}
 <div class="sso-profile">
   <h1 class="title is-4">{% trans "Your account" %}</h1>
+  <p class="subtitle is-6">
+    {% blocktrans trimmed %}
+      Your account details, what you can do on the feed, and the passkeys you
+      sign in with.
+    {% endblocktrans %}
+  </p>
     <div class="box-content mb-5">
       {% if identity %}
       <div class="is-flex is-justify-content-end">
