@@ -14,13 +14,9 @@ cannot survive paging, and a whole wave is what the Django admin is for.
       <h1 class="title is-4">{% trans "People" %}</h1>
       <p class="subtitle is-6">
         {% if everyone %}
-          {% blocktrans trimmed %}
-            Everybody with a QGIS account, and where each of them has got to.
-          {% endblocktrans %}
+          {% trans "Everyone with a QGIS account." %}
         {% else %}
-          {% blocktrans trimmed %}
-            The people you have invited, and where each of them has got to.
-          {% endblocktrans %}
+          {% trans "People you have invited." %}
         {% endif %}
       </p>
       <p>
@@ -115,7 +111,7 @@ cannot survive paging, and a whole wave is what the Django admin is for.
       <tr>
         <th scope="col" class="sso-account">{% trans "Account" %}</th>
         <th scope="col">{% trans "State" %}</th>
-        <th scope="col">{% trans "Vouched for by" %}</th>
+        <th scope="col">{% trans "Invited by" %}</th>
         <th scope="col">{% trans "Roles" %}</th>
         <th scope="col">{% trans "Last step" %}</th>
         <th scope="col">{% trans "Invite" %}</th>
@@ -138,7 +134,7 @@ cannot survive paging, and a whole wave is what the Django admin is for.
             {% if row.sponsor %}
               {{ row.sponsor.get_full_name|default:row.sponsor.username }}
             {% else %}
-              <span title="{% trans 'Nobody. This account was here before invitations were, or it starts a chain of its own.' %}">—</span>
+              <span title="{% trans 'Nobody. This account was created before invitations existed.' %}">—</span>
             {% endif %}
           </td>
           <td>{{ row.role_labels|join:", "|default:"—" }}</td>

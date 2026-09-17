@@ -22,7 +22,7 @@ recovery panel instead.
         {% endif %}
       </h1>
       <p class="subtitle is-6">
-        {% trans "Hand it to one person, the way you would a password." %}
+        {% trans "Send it to one person only." %}
       </p>
     </div>
     <a class="button is-light" href="{% url 'qgis_sso:enrolment' %}">
@@ -36,8 +36,8 @@ recovery panel instead.
         {% blocktrans trimmed %}
           Copy it now. It is not stored anywhere and will not be shown again.
           The link signs its holder in as that person, who is then asked to
-          confirm their address and create a passkey. So hand it to that person
-          and nobody else, the way you would a password. It works once.
+          confirm their address and create a passkey. Send it only to that
+          person. The link works once.
         {% endblocktrans %}
       </div>
 
@@ -73,16 +73,15 @@ recovery panel instead.
         <figcaption class="has-text-centered is-size-7 mt-2">
           {% blocktrans trimmed %}
             The same link. Have them scan it with the device the passkey will
-            live on, so nobody has to read an address out.
+            live on.
           {% endblocktrans %}
         </figcaption>
       </figure>
     {% else %}
       <div class="notification">
         {% blocktrans trimmed %}
-          There is no link to show. A link appears once, on the page that issues
-          it, and is stored nowhere, so reloading loses it. Issue a fresh one
-          from the enrolment list.
+          There is no link to show. A link appears once and is never stored, so
+          reloading loses it. Issue a new one from the enrolment list.
         {% endblocktrans %}
       </div>
       <a class="button is-primary1" href="{% url 'qgis_sso:enrolment' %}">
