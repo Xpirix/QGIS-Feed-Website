@@ -42,10 +42,10 @@ recovery panel instead.
       </div>
 
       <p class="mb-4">
-        {% url 'qgis_sso:help' as help_url %}
-        {% blocktrans trimmed with target=help_url|add:"#link" %}
-          Send them <a href="{{ target }}">what to do with the link</a> too.
-        {% endblocktrans %}
+        <i class="fa-solid fa-circle-info has-text-success mr-1" aria-hidden="true"></i>
+        <a href="{% url 'qgis_sso:help' %}#link">
+          {% trans "What they need to do with the link" %}
+        </a>
       </p>
 
       <div class="field has-addons">

@@ -54,6 +54,7 @@ to auth.qgis.org and no other site can create or delete one.
   {% else %}
     <h2 class="title is-5">{% trans "Passkeys" %}</h2>
     <p class="mb-3">
+      <i class="fa-solid fa-circle-info has-text-success mr-1" aria-hidden="true"></i>
       <a href="{% url 'qgis_sso:help' %}#passkeys">
         {% trans "What passkeys are, and how to add or remove one" %}
       </a>

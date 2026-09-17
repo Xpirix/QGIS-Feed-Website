@@ -45,7 +45,10 @@ we cannot actually establish.
       </a>
       {% if support_url %}
       <a class="button is-light" href="{{ support_url }}">
-        {% translate "Get help" %}
+        <span class="icon is-small">
+          <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+        </span>
+        <span>{% translate "Get help" %}</span>
       </a>
       {% endif %}
     </div>
