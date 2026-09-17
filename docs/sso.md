@@ -78,7 +78,7 @@ stateDiagram-v2
     LinkSent --> Active : first sign-in, passkey enrolled
     Active --> Revoked : withdraw trust
     Active --> Suspended : their sponsor was revoked
-    Revoked --> Active : reverse, within the grace window
+    Revoked --> Active : reverse (7d)
     Suspended --> Active : give them a new sponsor
 ```
 
