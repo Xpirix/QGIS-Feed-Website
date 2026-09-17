@@ -56,10 +56,10 @@ export STATIC_ROOT="${TMPDIR}/static"
 export GEOIP_PATH="${TMPDIR}/geoip"
 mkdir -p "${MEDIA_ROOT}/feedimages" "${STATIC_ROOT}" "${GEOIP_PATH}"
 
-# GeoIP2() is constructed on every UserVisit save, outside the try that guards
-# the lookup, so an empty GEOIP_PATH fails the suite outright. Given a
-# directory, Django does not scan it: it looks for the two exact filenames in
-# GEOIP_SETTINGS, so the copy below has to keep this name.
+# MaxMind's fabricated City fixture, not the real GeoLite2 database: the
+# geofencing tests assert against London, which it covers. Given a directory,
+# Django does not scan it - it looks for the two exact filenames in
+# GEOIP_SETTINGS, so the copy below has to rename to this one.
 echo "== Installing the GeoIP database =="
 cp "${geoipDb}" "${GEOIP_PATH}/GeoLite2-City.mmdb"
 

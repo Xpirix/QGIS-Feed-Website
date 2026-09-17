@@ -37,32 +37,28 @@ let
     name: attrs: script:
     pkgs.runCommand "check-${name}" attrs (builtins.readFile script);
 
-  # signals.py builds a GeoIP2() on every UserVisit save, outside the try that
-  # guards the lookup, so the suite cannot run without a database on disk.
-  # test_ip_address_removed goes further and asserts a real result - that
-  # 180.247.213.170 resolves to Indonesia - so MaxMind's fabricated test
-  # fixture is not enough and the actual GeoLite2 database is required.
+  # The geofencing tests need a real database on disk, so the check has to
+  # fetch one. fetchurl is a fixed-output derivation, which is what lets it
+  # reach the network from inside the build sandbox that ordinary derivations
+  # are walled off from.
   #
-  # fetchurl is a fixed-output derivation, which is what lets it reach the
-  # network from inside the build sandbox that ordinary derivations are walled
-  # off from.
+  # MaxMind's own fabricated City fixture, pinned by commit SHA. Every other
+  # source we tried rots: the P3TERX mirror's 'download' branch is force-pushed
+  # whenever MaxMind publishes, its releases/latest asset is re-resolved to new
+  # content just as often, and its dated releases are deleted after a while - so
+  # a pinned hash broke CI on a cadence we do not control, and an immutable tag
+  # was not on offer either. Here the SHA is part of the URL, so the location
+  # and the content are both immutable: this fetch never needs updating.
   #
-  # A dated release tag, not the 'download' branch Dockerfile:29 uses. That
-  # branch is force-pushed whenever MaxMind publishes, so it broke this check
-  # with a hash mismatch every week, and it quietly re-dated the geolocation the
-  # geofencing assertions above depend on. Release assets cannot be replaced in
-  # place, so the tag pins both the build and the test data.
+  # MaxMind-DB is dual Apache-2.0/MIT, test-data included, so unlike GeoLite2
+  # itself this is redistributable.
   #
-  # The mirror is still a third party rather than MaxMind; moving to MaxMind's
-  # Apache-2.0 test fixture needs the spatial fixtures rewritten off Indonesia.
-  #
-  # To move to a newer database, pick a tag from
-  # https://github.com/P3TERX/GeoLite.mmdb/releases and regenerate the hash with
-  #
-  #   nix store prefetch-file --name GeoLite2-City.mmdb <url>
+  # The fixture carries no Indonesian networks, so the assertions in tests.py
+  # and the spatial_filter polygons in qgisfeed.json target London instead.
+  # Changing one means changing the other.
   geoipDb = pkgs.fetchurl {
-    url = "https://github.com/P3TERX/GeoLite.mmdb/releases/latest/download/GeoLite2-City.mmdb";
-    hash = "sha256-hZdM1xUzPB2rniP6BoVIOoyTFtNy5pFk+DbR+BLEH/g=";
+    url = "https://raw.githubusercontent.com/maxmind/MaxMind-DB/000a8df991543651637fd9c16b7a7f8480370514/test-data/GeoIP2-City-Test.mmdb";
+    hash = "sha256-7ZcnOOTgOj5W4SBBpq9NkVkiSdEQ9+SmR+Xy+g5jnAk=";
   };
 in
 {

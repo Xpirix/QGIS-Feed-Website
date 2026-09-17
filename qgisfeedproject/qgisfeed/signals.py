@@ -79,15 +79,17 @@ def post_save_user_visit(sender, instance, **kwargs):
     from qgisfeed.models import QgisUserVisit
     from user_visit.models import UserVisit
 
-    g = GeoIP2()
     country_data = {}
     qgis_version = ""
     platform_name = ""
 
     if instance.remote_addr:
+        # Constructing GeoIP2 is itself a failure point: it raises when the
+        # database is missing, so it belongs inside the guard. A visit is worth
+        # recording without a location.
         try:
-            country_data = g.country(instance.remote_addr)
-        except:  # AddressNotFoundErrors:
+            country_data = GeoIP2().country(instance.remote_addr)
+        except Exception:
             country_data = {}
 
     version_match = re.search("QGIS(.*)", instance.ua_string)
