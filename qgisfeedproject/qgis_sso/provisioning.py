@@ -16,7 +16,8 @@ from dataclasses import dataclass, field
 
 from django.conf import settings
 from django.core.cache import cache
-from django.db import ProtectedError, transaction
+from django.db import transaction
+from django.db.models import ProtectedError
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
