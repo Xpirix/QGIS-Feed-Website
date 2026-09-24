@@ -535,6 +535,21 @@ def withdraw_in_realm(identity, roles, client=None):
         )
 
 
+def switch_off_in_realm(identity, client=None):
+    """Switch off a realm account whose invitation was given up.
+
+    Freeing a place has to give back what it took. A place is an account in the
+    shared realm, so leaving that account enabled would return the bookkeeping
+    and keep the account, and the limit would count nothing real.
+
+    The same call as withdrawing trust, without the roles: none are recorded,
+    because ``last_seen_roles`` is only written at a sign-in this account never
+    made. They stay on the realm account, so re-enabling it in the console is
+    all it takes to let somebody in after all.
+    """
+    withdraw_in_realm(identity, [], client=client)
+
+
 def restore_in_realm(identity, roles, client=None):
     session = _session(client)
     if session is None:

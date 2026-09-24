@@ -20,6 +20,7 @@ from django.utils import timezone
 
 from .. import tiers
 from ..auth import expected_issuer
+from ..keycloak import KeycloakError
 from ..models import KeycloakIdentity, LinkMethod, SsoAuditEvent, TrustState
 from ..provisioning import Provisioner
 from .base import FakeRealm
@@ -558,11 +559,13 @@ class FreeingAPlaceTest(TestCase):
     """Giving back the place an invitation holds.
 
     The route that makes the quota a limit on invitations open at once rather
-    than a lifetime cap: an invitation nobody ever takes up is given back by
-    the sponsor, and the account it made is left exactly as it was.
+    than a lifetime cap. A place is an account in the shared realm, so giving
+    the place back switches that account off: freeing the bookkeeping alone
+    would leave the account standing and the limit would count nothing real.
     """
 
     def setUp(self):
+        self.realm = InvitingRealm()
         self.superuser = User.objects.create_superuser("root", "root@example.org", "x")
         KeycloakIdentity.objects.create(
             user=self.superuser,
@@ -580,7 +583,10 @@ class FreeingAPlaceTest(TestCase):
         data = {"action": "release-place", "identity": str(identity.pk)}
         if confirm:
             data["confirm"] = confirm
-        return self.client.post(MANAGE, data, follow=True)
+        with mock.patch(
+            "qgis_sso.keycloak.KeycloakAdminClient", return_value=self.realm
+        ):
+            return self.client.post(MANAGE, data, follow=True)
 
     def test_it_asks_before_it_acts(self):
         response = self.free(self.invitee.keycloak_identity, confirm=None)
@@ -588,6 +594,7 @@ class FreeingAPlaceTest(TestCase):
         self.assertContains(response, "Free the place this invitation holds?")
         self.invitee.keycloak_identity.refresh_from_db()
         self.assertIsNone(self.invitee.keycloak_identity.invitation_released_at)
+        self.assertEqual(self.realm.disabled, [])
 
     @override_settings(SSO_TIER_QUOTAS={0: None, 1: 25, 2: 1, 3: 10, 4: 3})
     def test_freeing_a_place_lets_the_sponsor_invite_again(self):
@@ -598,15 +605,41 @@ class FreeingAPlaceTest(TestCase):
         self.assertContains(response, "is free again")
         self.assertEqual(tiers.remaining(self.reviewer), 1)
 
-    def test_the_account_is_left_alone(self):
+    def test_the_realm_account_is_switched_off(self):
+        """The place has to give back what it took, or it bounds nothing."""
+        self.free(self.invitee.keycloak_identity)
+
+        self.assertEqual(self.realm.disabled, ["sub-one"])
+
+    def test_the_record_and_the_person_are_kept(self):
+        """Switched off, not erased: the graph still says who vouched."""
         self.free(self.invitee.keycloak_identity)
 
         identity = self.invitee.keycloak_identity
         identity.refresh_from_db()
         self.assertEqual(identity.sponsor, self.reviewer)
-        self.assertEqual(identity.trust_state, TrustState.ACTIVE)
         self.assertEqual(identity.invitation_released_by, self.reviewer)
         self.assertTrue(User.objects.filter(username="one").exists())
+
+    def test_a_realm_that_refuses_frees_nothing(self):
+        """A free place beside a live account is the one outcome to avoid."""
+        with mock.patch(
+            "qgis_sso.keycloak.KeycloakAdminClient", side_effect=KeycloakError("no")
+        ):
+            response = self.client.post(
+                MANAGE,
+                {
+                    "action": "release-place",
+                    "identity": str(self.invitee.keycloak_identity.pk),
+                    "confirm": "yes",
+                },
+                follow=True,
+            )
+
+        self.assertContains(response, "could not reach")
+        identity = self.invitee.keycloak_identity
+        identity.refresh_from_db()
+        self.assertIsNone(identity.invitation_released_at)
 
     def test_it_is_audited(self):
         self.free(self.invitee.keycloak_identity)
@@ -625,6 +658,33 @@ class FreeingAPlaceTest(TestCase):
 
         self.assertContains(response, "already free")
 
+    def test_nothing_is_handed_to_a_switched_off_account(self):
+        """Neither the email nor the link, and not because the row hides them."""
+        identity = self.invitee.keycloak_identity
+        self.free(identity)
+
+        for action in ("send-email", "issue-link"):
+            with mock.patch(
+                "qgis_sso.keycloak.KeycloakAdminClient", return_value=self.realm
+            ):
+                response = self.client.post(
+                    MANAGE,
+                    {"action": action, "identity": str(identity.pk), "confirm": "yes"},
+                    follow=True,
+                )
+
+            self.assertContains(response, "switched off")
+        self.assertEqual(self.realm.emailed, [])
+
+    def test_the_row_stops_offering_them(self):
+        self.free(self.invitee.keycloak_identity)
+
+        response = self.client.get(MANAGE)
+
+        self.assertNotContains(response, "send-email")
+        self.assertNotContains(response, "issue-link")
+        self.assertContains(response, "account switched off")
+
     def test_there_is_no_place_to_free_once_they_have_signed_in(self):
         identity = self.invitee.keycloak_identity
         identity.first_sso_login_at = timezone.now()
@@ -635,6 +695,7 @@ class FreeingAPlaceTest(TestCase):
         self.assertContains(response, "has already signed in")
         identity.refresh_from_db()
         self.assertIsNone(identity.invitation_released_at)
+        self.assertEqual(self.realm.disabled, [])
 
     def test_the_button_is_gone_once_they_have_signed_in(self):
         identity = self.invitee.keycloak_identity
@@ -654,6 +715,7 @@ class FreeingAPlaceTest(TestCase):
         self.assertContains(response, "could not find that account")
         theirs.keycloak_identity.refresh_from_db()
         self.assertIsNone(theirs.keycloak_identity.invitation_released_at)
+        self.assertEqual(self.realm.disabled, [])
 
     def test_an_administrator_may_free_any_place(self):
         self.client.force_login(self.superuser, backend=LOCAL_BACKEND)

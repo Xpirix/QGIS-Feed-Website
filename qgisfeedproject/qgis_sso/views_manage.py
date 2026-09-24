@@ -131,6 +131,21 @@ class EnrolmentView(View):
             )
             return render(request, self.template_name, context)
 
+        # Nothing is handed to somebody whose account was switched off when
+        # their place was freed. The row offers neither, and the row being
+        # right is not what makes it so.
+        if action in (SEND_EMAIL, ISSUE_LINK) and identity.invitation_released_at:
+            messages.error(
+                request,
+                _(
+                    "%(username)s had their place freed, so their account is "
+                    "switched off and the link would not work. Ask an "
+                    "administrator if they need to come back."
+                )
+                % {"username": identity.user.username},
+            )
+            return render(request, self.template_name, context)
+
         if action == ISSUE_LINK:
             return self.issue_link(request, identity, context)
         if action == SEND_EMAIL:
@@ -227,11 +242,12 @@ class EnrolmentView(View):
     def release_place(self, request, identity, context):
         """Give back the place an invitation is holding, after confirming.
 
-        Confirmed because the reader has to know what stays behind: the
-        account, the link, and the sponsor. Only the place goes.
+        A place is an account in the shared realm, so giving the place back
+        switches that account off: freeing only the bookkeeping would leave the
+        account standing and the limit would be counting nothing.
 
-        Nothing is asked of Keycloak. The account is exactly as it was a
-        moment ago; the sponsor has simply stopped waiting for them.
+        The realm goes first. If it refuses, nothing is written here, because a
+        freed place beside a live account is the one outcome worth avoiding.
         """
         if identity.has_logged_in_via_sso:
             messages.error(
@@ -247,6 +263,12 @@ class EnrolmentView(View):
         if request.POST.get("confirm") != "yes":
             context.update({"confirming": RELEASE_PLACE, "subject": identity})
             return render(request, self.template_name, context)
+
+        try:
+            revocation.switch_off_in_realm(identity)
+        except revocation.RevocationError as error:
+            messages.error(request, str(error))
+            return self.back(request)
 
         with transaction.atomic():
             identity.invitation_released_at = timezone.now()
@@ -265,7 +287,10 @@ class EnrolmentView(View):
             )
         messages.success(
             request,
-            _("The place held for %(username)s is free again.")
+            _(
+                "The place held for %(username)s is free again, and their "
+                "account is switched off."
+            )
             % {"username": identity.user.username},
         )
         return self.back(request)
@@ -597,8 +622,8 @@ class InviteNewView(View):
         if left is not None and left <= 0:
             return _(
                 "Every place you have is waiting for somebody. A place comes "
-                "back when one of them signs in, or you can free one yourself "
-                "on the people page."
+                "back when one of them signs in. You can also free one on the "
+                "people page, which switches that account off."
             )
 
         if not form["username"]:

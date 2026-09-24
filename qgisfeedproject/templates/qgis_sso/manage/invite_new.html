@@ -91,18 +91,19 @@ suggestion.
           {% blocktrans trimmed count counter=remaining %}
             One place left. This is how many invitations you may have waiting
             at once, not how many people you may invite. A place comes back
-            when somebody signs in, or when you free it yourself on the people
-            page.
+            when somebody signs in, or when you free it on the people page,
+            which switches their account off.
           {% plural %}
             {{ counter }} places left. This is how many invitations you may
             have waiting at once, not how many people you may invite. A place
-            comes back when somebody signs in, or when you free it yourself on
-            the people page.
+            comes back when somebody signs in, or when you free it on the
+            people page, which switches their account off.
           {% endblocktrans %}
         {% else %}
           {% blocktrans trimmed %}
             Every place you have is waiting for somebody. A place comes back
-            when one of them signs in, or you can free one yourself.
+            when one of them signs in. You can also free one, which switches
+            that account off.
           {% endblocktrans %}
           <a href="{% url 'qgis_sso:enrolment' %}">
             {% trans "Free a place on the people page" %}

@@ -84,9 +84,10 @@ cannot survive paging, and a whole wave is what the Django admin is for.
       <h2 class="title is-5">{% trans "Free the place this invitation holds?" %}</h2>
       <div class="notification is-warning">
         {% blocktrans trimmed with username=subject.user.username %}
-          The account for {{ username }} stays exactly as it is, and their
-          setup link still works. It stops holding a place open, so whoever
-          invited them can invite somebody else.
+          This switches off the account for {{ username }} and stops their
+          setup link working, which is what makes the place genuinely free
+          again. They cannot be invited again under the same name or address,
+          so do this only if they are not coming.
         {% endblocktrans %}
       </div>
       <form method="post" action="">
@@ -176,7 +177,7 @@ cannot survive paging, and a whole wave is what the Django admin is for.
               <br><small class="has-text-grey">{% trans "old password switched off" %}</small>
             {% endif %}
             {% if row.place_released %}
-              <br><small class="has-text-grey">{% trans "place freed, the link still works" %}</small>
+              <br><small class="has-text-grey">{% trans "place freed, account switched off" %}</small>
             {% endif %}
           </td>
           <td>
@@ -184,16 +185,18 @@ cannot survive paging, and a whole wave is what the Django admin is for.
             <form method="post" action="" class="is-flex sso-row-actions">
               {% csrf_token %}
               <input type="hidden" name="identity" value="{{ row.identity.pk }}">
-              {% blocktrans trimmed asvar send_label with username=row.user.username %}
-                Email the setup link to {{ username }}
-              {% endblocktrans %}
-              <button class="button is-small is-primary1 is-outlined" type="submit"
-                      name="action" value="send-email"
-                      title="{{ send_label }}" aria-label="{{ send_label }}">
-                <span class="icon is-small"><i class="fas fa-envelope"></i></span>
-              </button>
+              {% if not row.place_released %}
+                {% blocktrans trimmed asvar send_label with username=row.user.username %}
+                  Email the setup link to {{ username }}
+                {% endblocktrans %}
+                <button class="button is-small is-primary1 is-outlined" type="submit"
+                        name="action" value="send-email"
+                        title="{{ send_label }}" aria-label="{{ send_label }}">
+                  <span class="icon is-small"><i class="fas fa-envelope"></i></span>
+                </button>
+              {% endif %}
               {# Not once signed in: a link would then authenticate with no passkey. #}
-              {% if not row.identity.has_logged_in_via_sso %}
+              {% if not row.identity.has_logged_in_via_sso and not row.place_released %}
                 {% blocktrans trimmed asvar link_label with username=row.user.username %}
                   Get the enrolment link for {{ username }}
                 {% endblocktrans %}

@@ -98,10 +98,30 @@ how many anybody may ever invite.
 
 Three things end an open invitation. The person signs in. The sponsor frees
 the place on the people page, which is the answer for somebody who is never
-going to sign in, and which leaves the account and its setup link untouched.
-Or trust in the account is withdrawn, leaving a place nobody could use. Without
-the second of those the quota was a lifetime cap wearing another name: a
-mistyped address held a place for good.
+going to sign in. Or trust in the account is withdrawn, leaving a place nobody
+could use. Without the second of those the quota was a lifetime cap wearing
+another name: a mistyped address held a place for good.
+
+### Freeing a place switches the account off
+
+A place is not a number. In this design an invitation *is* an account, created
+in the shared realm at the moment of invitation, so a place stands for a real
+username and a real address. Freeing only the bookkeeping would leave that
+account enabled with a working setup link, and the limit would be counting
+something the inviter can reset at will.
+
+So freeing a place disables the realm account first, and writes the local
+record only if the realm agrees. A free place beside a live account is the one
+outcome worth avoiding, which is why the order is that way round. The row then
+offers neither the setup email nor the enrolment link, and the view refuses
+both, because a row that hides a button is not what stops it being posted.
+
+What this bounds is how many live, unused accounts one sponsor can be holding
+at a time. It does not bound how many accounts somebody creates over the years,
+and nothing here does: an inviter can free places and invite again as often as
+they like. That is a deliberate limit of this model, not an oversight. What
+stands behind it is the graph rather than the count, since every account names
+who vouched for it and revoking a sponsor suspends their whole subtree.
 
 ## Withdrawing trust
 
