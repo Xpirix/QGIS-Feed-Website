@@ -146,6 +146,16 @@ def refusal(actor, identity):
     if actor_identity is None or actor_identity.trust_state != TrustState.ACTIVE:
         return _("Your account cannot withdraw trust.")
 
+    if identity.first_sso_login_at is None:
+        # Nothing has been trusted yet. Withdrawing trust would leave the
+        # account, the name and the address taken for ever; cancelling the
+        # invitation undoes it instead. A cascade may still suspend an account
+        # in this state - that reaches a whole subtree and is not this check.
+        return _(
+            "%(username)s has not signed in yet, so there is no trust to "
+            "withdraw. Cancel their invitation instead."
+        ) % {"username": identity.user.username}
+
     # Never upwards. This used to sit after the administrator branch below,
     # which returns early, so it never ran for an administrator: they could
     # revoke whoever invited them and be suspended by their own cascade.
@@ -470,17 +480,16 @@ def reparent(actor, identity, new_sponsor, reason):
             % {"username": new_sponsor.username, "roles": ", ".join(refused)}
         )
 
-    # Quota counts invitations still open, which means accounts that have
-    # never signed in and whose place has not been given back. Moving somebody
-    # who has already arrived, or whose place is already free, costs their new
-    # sponsor nothing, so it is only checked for the rest.
-    if identity.first_sso_login_at is None and identity.invitation_released_at is None:
+    # Quota counts invitations still open, which means accounts that have never
+    # signed in. Moving somebody who has already arrived costs their new sponsor
+    # nothing, so it is only checked for those who have not.
+    if identity.first_sso_login_at is None:
         left = remaining(new_sponsor)
         if left is not None and left < 1:
             raise RevocationError(
                 _(
                     "%(username)s has no free place for this account. They can "
-                    "free one on the people page."
+                    "cancel an invitation on the people page to make one."
                 )
                 % {"username": new_sponsor.username}
             )
@@ -533,21 +542,6 @@ def withdraw_in_realm(identity, roles, client=None):
             _("The QGIS account service refused the change, so nothing was done.")
             + f" ({error})"
         )
-
-
-def switch_off_in_realm(identity, client=None):
-    """Switch off a realm account whose invitation was given up.
-
-    Freeing a place has to give back what it took. A place is an account in the
-    shared realm, so leaving that account enabled would return the bookkeeping
-    and keep the account, and the limit would count nothing real.
-
-    The same call as withdrawing trust, without the roles: none are recorded,
-    because ``last_seen_roles`` is only written at a sign-in this account never
-    made. They stay on the realm account, so re-enabling it in the console is
-    all it takes to let somebody in after all.
-    """
-    withdraw_in_realm(identity, [], client=client)
 
 
 def restore_in_realm(identity, roles, client=None):
