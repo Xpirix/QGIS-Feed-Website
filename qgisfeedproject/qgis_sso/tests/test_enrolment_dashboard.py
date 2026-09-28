@@ -353,10 +353,12 @@ class SortingTest(SuperuserPage):
 
         # Sponsored by root, then by zara. Accounts from before invitations
         # existed have no sponsor, and gather at the far end rather than
-        # scattering through the names.
+        # scattering through the names. They compare equal to each other, so
+        # the primary key breaks the tie and they read in the order they were
+        # created. That tiebreaker is what stops a row appearing on two pages.
         self.assertEqual(self.usernames(response)[:2], ["erin", "dave"])
         self.assertEqual(
-            self.usernames(response)[2:], ["alice", "bob", "carol", "zara"]
+            self.usernames(response)[2:], ["carol", "alice", "bob", "zara"]
         )
 
 
